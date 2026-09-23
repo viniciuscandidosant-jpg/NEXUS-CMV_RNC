@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle de CMV — Ilha do Caranguejo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --gelo: #EDF2F4;
+  --papel: #FFFFFF;
+  --tinta: #13262F;
+  --tinta-2: #4A5F69;
+  --linha: #CBD7DD;
+  --mare: #0F5C6B;
+  --mare-escura: #0A4652;
+  --casco: #B3342B;
+  --ambar: #9A5F0C;
+  --ok: #2E6B3F;
+  --sans: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --cond: "Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: inherit; }
+html, body { margin: 0; }
+body {
+  background: var(--gelo);
+  color: var(--tinta);
+  font: 400 16px/1.5 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--mare); outline-offset: 2px; }
+.oculto { display: none !important; }
+
+/* ---------- Login ---------- */
+#login {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px;
+}
+.login-box {
+  width: 100%; max-width: 360px; background: var(--papel);
+  border: 1px solid var(--linha); border-radius: 6px; padding: 28px;
+}
+.login-box h1 {
+  font: 700 28px/1.1 var(--cond); margin: 0 0 4px;
+}
+.login-box p { margin: 0 0 20px; color: var(--tinta-2); }
+
+/* ---------- Estrutura ---------- */
+header {
+  background: var(--tinta); color: var(--papel);
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+}
+.barra {
+  max-width: 1080px; margin: 0 auto; padding: 12px 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.marca { font: 700 20px/1 var(--cond); margin-right: auto; }
+.marca small { font: 500 14px var(--sans); opacity: .7; margin-left: 8px; }
+.usuario { font-size: 14px; opacity: .85; }
+nav { display: flex; gap: 4px; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+nav button {
+  background: none; border: 0; color: #B9CBD2; padding: 10px 14px;
+  font: 600 16px var(--cond); cursor: pointer; border-bottom: 3px solid transparent;
+}
+nav button[aria-selected="true"] { color: var(--papel); border-bottom-color: #7FC3CF; }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+h2 { font: 700 26px/1.15 var(--cond); margin: 0; }
+.topo-secao { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.topo-secao h2 { margin-right: auto; }
+
+/* ---------- Controles ---------- */
+label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 4px; color: var(--tinta-2); }
+input, select, textarea {
+  width: 100%; padding: 10px 12px; background: var(--papel);
+  border: 1px solid var(--linha); border-radius: 4px;
+}
+textarea { min-height: 70px; resize: vertical; }
+.campo { margin-bottom: 14px; }
+.btn {
+  border: 1px solid var(--mare); background: var(--mare); color: var(--papel);
+  padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;
+}
+.btn:hover { background: var(--mare-escura); }
+.btn:disabled { opacity: .5; cursor: wait; }
+.btn.sec { background: var(--papel); color: var(--mare); }
+.btn.sec:hover { background: #E3EEF1; }
+.btn.perigo { background: var(--papel); color: var(--casco); border-color: var(--casco); }
+.btn.peq { padding: 6px 10px; font-size: 14px; }
+.btn.bloco { width: 100%; }
+.erro { color: var(--casco); font-size: 14px; min-height: 20px; margin-top: 8px; }
+
+/* ---------- Tabelas ---------- */
+.tabela-wrap { overflow-x: auto; background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font: 600 14px var(--cond); color: var(--tinta-2); background: #F6F9FA; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+.numero-req { font: 700 16px var(--cond); white-space: nowrap; }
+.itens-lista { margin: 0; padding: 0; list-style: none; font-size: 15px; }
+.acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+.selo {
+  display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 8px;
+  border-radius: 3px; white-space: nowrap;
+}
+.selo.extra { background: #F8E3E1; color: var(--casco); }
+.selo.pend { background: #F7EBD7; color: var(--ambar); }
+.selo.ok { background: #E0EEE3; color: var(--ok); }
+.vazio { padding: 32px; text-align: center; color: var(--tinta-2); }
+
+/* ---------- Aviso ---------- */
+.aviso {
+  border-left: 4px solid var(--ambar); background: #FBF3E6;
+  padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0;
+}
+.aviso.extra { border-left-color: var(--casco); background: #FBEBE9; }
+
+/* ---------- Saldos ---------- */
+.saldos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.saldo-card {
+  background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 14px 16px;
+}
+.saldo-card.critico { border-left: 4px solid var(--mare); }
+.saldo-card h3 { font: 600 17px/1.2 var(--cond); margin: 0 0 10px; }
+.saldo-linha { display: flex; align-items: baseline; justify-content: space-between; }
+.saldo-linha span { color: var(--tinta-2); font-size: 14px; }
+.saldo-valor { font: 700 34px/1.1 var(--cond); }
+.saldo-valor.neg { color: var(--casco); }
+.saldo-rodape { font-size: 13px; color: var(--tinta-2); margin-top: 8px; }
+
+/* ---------- Modal ---------- */
+dialog {
+  border: 0; border-radius: 8px; padding: 0; width: min(640px, calc(100% - 24px));
+  max-height: calc(100% - 48px);
+}
+dialog::backdrop { background: rgba(19, 38, 47, .55); }
+.modal-cab { padding: 18px 20px 0; }
+.modal-corpo { padding: 16px 20px; }
+.modal-pe {
+  padding: 14px 20px; border-top: 1px solid var(--linha);
+  display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
+}
+.item-linha { display: grid; grid-template-columns: 1fr 110px 40px; gap: 8px; margin-bottom: 8px; }
+.item-linha button { border: 1px solid var(--linha); background: var(--papel); border-radius: 4px; cursor: pointer; }
+.sugestao { font-size: 13px; color: var(--tinta-2); margin: -4px 0 10px; }
+
+/* ---------- Toast ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%); background: var(--tinta); color: var(--papel);
+  padding: 10px 16px; border-radius: 4px; z-index: 20; max-width: calc(100% - 32px);
+}
+
+/* ---------- Impressão ---------- */
+#impressao { display: none; }
+@media print {
+  body { background: #fff; }
+  #app, #login, #toast, dialog { display: none !important; }
+  #impressao { display: block; color: #000; font: 12pt/1.4 var(--sans); }
+  .imp-cab { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 8px; }
+  .imp-cab h1 { font: 700 20pt/1.1 var(--cond); margin: 0; }
+  .imp-num { font: 700 18pt var(--cond); text-align: right; }
+  .imp-dados { margin: 14px 0; }
+  .imp-dados div { margin-bottom: 4px; }
+  #impressao table { margin: 10px 0 40px; }
+  #impressao th, #impressao td { border: 1px solid #000; background: none; color: #000; }
+  .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+  .assinaturas div { border-top: 1px solid #000; padding-top: 6px; text-align: center; font-weight: 600; }
+  .assinaturas small { display: block; font-weight: 400; margin-top: 18px; text-align: left; }
+}
+
+@media (max-width: 640px) {
+  main { padding: 16px 12px 64px; }
+  .barra { padding: 10px 12px; }
+  nav { padding: 0 12px; }
+  th, td { padding: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" class="oculto">
+  <form class="login-box" id="form-login">
+    <h1>Controle de CMV</h1>
+    <p>Ilha do Caranguejo</p>
+    <div class="campo">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" autocomplete="username" required>
+    </div>
+    <div class="campo">
+      <label for="login-senha">Senha</label>
+      <input id="login-senha" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn bloco" type="submit">Entrar</button>
+    <div class="erro" id="login-erro"></div>
+  </form>
+</section>
+
+<!-- ================= APP ================= -->
+<div id="app" class="oculto">
+  <header>
+    <div class="barra">
+      <div class="marca">Controle de CMV<small>Ilha do Caranguejo</small></div>
+      <span class="usuario" id="usuario-nome"></span>
+      <button class="btn sec peq" id="btn-sair">Sair</button>
+    </div>
+    <nav role="tablist">
+      <button role="tab" data-aba="requisicoes" aria-selected="true">Requisições</button>
+      <button role="tab" data-aba="saldos" aria-selected="false">Saldos</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Requisições -->
+    <section id="aba-requisicoes">
+      <div class="topo-secao">
+        <h2>Requisições</h2>
+        <input type="date" id="filtro-dia" aria-label="Filtrar por dia" style="width:auto">
+        <button class="btn" id="btn-nova">Nova requisição</button>
+      </div>
+      <div id="aviso-pendencias"></div>
+      <div class="tabela-wrap">
+        <table>
+          <thead>
+            <tr><th>Número</th><th>Data e hora</th><th>Retirada por</th><th>Itens</th><th>Situação</th><th></th></tr>
+          </thead>
+          <tbody id="lista-req"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Saldos -->
+    <section id="aba-saldos" class="oculto">
+      <div class="topo-secao">
+        <h2>Saldos</h2>
+        <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tinta)">
+          <input type="checkbox" id="so-criticos" style="width:auto"> Só itens críticos
+        </label>
+      </div>
+      <div class="saldos" id="lista-saldos"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= MODAL NOVA REQUISIÇÃO ================= -->
+<dialog id="modal-req">
+  <form id="form-req" method="dialog">
+    <div class="modal-cab"><h2>Nova requisição</h2></div>
+    <div class="modal-corpo">
+      <div id="aviso-extra" class="aviso extra oculto">
+        Já existe retirada hoje. Esta será uma <strong>retirada extra</strong> e precisa de justificativa.
+      </div>
+      <div class="campo">
+        <label for="req-resp">Responsável pela retirada</label>
+        <input id="req-resp" required autocomplete="off">
+      </div>
+      <label>Itens</label>
+      <div id="req-itens"></div>
+      <button type="button" class="btn sec peq" id="btn-add-item">Adicionar item</button>
+      <div id="bloco-extra" class="oculto" style="margin-top:16px">
+        <div class="campo">
+          <label for="req-just">Justificativa da retirada extra</label>
+          <select id="req-just"></select>
+        </div>
+        <div class="campo">
+          <label for="req-coment">Comentário (opcional)</label>
+          <textarea id="req-coment"></textarea>
+        </div>
+      </div>
+      <div class="erro" id="req-erro"></div>
+    </div>
+    <div class="modal-pe">
+      <button type="button" class="btn sec" id="btn-cancelar">Cancelar</button>
+      <button type="submit" class="btn" id="btn-salvar-req">Salvar e imprimir</button>
+    </div>
+  </form>
+</dialog>
+
+<input type="file" id="input-scan" accept="image/*,application/pdf" class="oculto">
+<div id="impressao"></div>
+<div id="toast" class="oculto" role="status"></div>
+
+<script>
+// ================= CONFIG =================
+const SUPABASE_URL = "https://dnqcfgvwjzampdsvshxc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zNPfW2-E01ycbvz5eBYViQ_SNc0lWad";
+const BUCKET = "requisicoes-scans";
+const TZ = "America/Sao_Paulo";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (s) => document.querySelector(s);
+
+const estado = {
+  perfil: null,
+  produtos: [],
+  justificativas: [],
+  sugestoes: {},
+  reqScanAlvo: null,
+};
+
+// ================= UTIL =================
+const hojeSP = () => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
+const fmtDataHora = (iso) => new Date(iso).toLocaleString("pt-BR", {
+  timeZone: TZ, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+});
+const fmtQtd = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const isGestor = () => estado.perfil?.papel === "GESTOR";
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.remove("oculto");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add("oculto"), 3500);
+}
+function msgErro(e) {
+  const m = e?.message || String(e);
+  if (/row-level security/i.test(m)) return "Você não tem permissão para esta ação.";
+  return m;
+}
+
+// ================= AUTH =================
+$("#form-login").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("#login-erro").textContent = "";
+  const { error } = await sb.auth.signInWithPassword({
+    email: $("#login-email").value.trim(),
+    password: $("#login-senha").value,
+  });
+  if (error) $("#login-erro").textContent = "E-mail ou senha incorretos.";
+});
+
+$("#btn-sair").addEventListener("click", () => sb.auth.signOut());
+
+// setTimeout evita chamar o Supabase dentro do callback de auth (deadlock do supabase-js)
+sb.auth.onAuthStateChange((_ev, session) => {
+  setTimeout(() => (session ? iniciar(session.user) : mostrarLogin()), 0);
+});
+
+function mostrarLogin() {
+  estado.perfil = null;
+  $("#app").classList.add("oculto");
+  $("#login").classList.remove("oculto");
+}
+
+async function iniciar(user) {
+  if (estado.perfil?.id === user.id) return;
+  const { data: perfil } = await sb.from("perfis").select("*").eq("id", user.id).maybeSingle();
+  if (!perfil || !perfil.ativo) {
+    await sb.auth.signOut();
+    $("#login-erro").textContent = "Usuário sem perfil ativo. Fale com a gestão.";
+    return;
+  }
+  estado.perfil = perfil;
+  $("#usuario-nome").textContent = `${perfil.nome} (${perfil.papel === "GESTOR" ? "Gestão" : "Estoquista"})`;
+  $("#login").classList.add("oculto");
+  $("#app").classList.remove("oculto");
+  $("#filtro-dia").value = "";
+  await carregarCadastros();
+  await carregarRequisicoes();
+}
+
+// ================= ABAS =================
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
+  const aba = b.dataset.aba;
+  $("#aba-requisicoes").classList.toggle("oculto", aba !== "requisicoes");
+  $("#aba-saldos").classList.toggle("oculto", aba !== "saldos");
+  if (aba === "saldos") carregarSaldos();
+  if (aba === "requisicoes") carregarRequisicoes();
+}));
+
+// ================= CADASTROS =================
+async function carregarCadastros() {
+  const [p, j] = await Promise.all([
+    sb.from("produtos").select("id,nome,gramatura_g,critico").eq("ativo", true).order("critico", { ascending: false }).order("nome"),
+    sb.from("justificativas_extra").select("id,nome").eq("ativo", true).order("id"),
+  ]);
+  estado.produtos = p.data || [];
+  estado.justificativas = j.data || [];
+  $("#req-just").innerHTML = `<option value="">Selecione</option>` +
+    estado.justificativas.map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+}
+
+// ================= REQUISIÇÕES =================
+$("#filtro-dia").addEventListener("change", carregarRequisicoes);
+
+async function carregarRequisicoes() {
+  const dia = $("#filtro-dia").value;
+  let q = sb.from("v_requisicoes_dia")
+    .select("id,numero,data_hora,dia,responsavel_retirada,comentario,justificativa_extra,scan_path,ordem_dia,total_dia")
+    .order("data_hora", { ascending: false });
+  q = dia ? q.eq("dia", dia) : q.limit(60);
+  const { data: reqs, error } = await q;
+  if (error) return toast(msgErro(error));
+
+  const ids = reqs.map((r) => r.id);
+  let itensPorReq = {};
+  if (ids.length) {
+    const { data: itens } = await sb.from("requisicao_itens")
+      .select("requisicao_id,quantidade,produtos(nome)")
+      .in("requisicao_id", ids).is("excluido_em", null);
+    (itens || []).forEach((i) => (itensPorReq[i.requisicao_id] ??= []).push(i));
+  }
+  estado.itensPorReq = itensPorReq;
+  estado.reqs = reqs;
+
+  const tbody = $("#lista-req");
+  if (!reqs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="vazio">${dia ? "Nenhuma requisição neste dia." : "Nenhuma requisição ainda. Crie a primeira em “Nova requisição”."}</td></tr>`;
+  } else {
+    tbody.innerHTML = reqs.map((r) => {
+      const itens = (itensPorReq[r.id] || [])
+        .map((i) => `<li>${fmtQtd(i.quantidade)} × ${esc(i.produtos?.nome)}</li>`).join("");
+      const selos = [
+        r.ordem_dia > 1 ? `<span class="selo extra" title="${esc(r.justificativa_extra || "")}">Extra: ${esc(r.justificativa_extra || "")}</span>` : "",
+        r.scan_path ? `<span class="selo ok">Assinada</span>` : `<span class="selo pend">Sem scan</span>`,
+      ].join(" ");
+      return `<tr>
+        <td class="numero-req">${esc(r.numero)}</td>
+        <td>${fmtDataHora(r.data_hora)}</td>
+        <td>${esc(r.responsavel_retirada)}</td>
+        <td><ul class="itens-lista">${itens}</ul></td>
+        <td>${selos}</td>
+        <td><div class="acoes">
+          <button class="btn sec peq" data-acao="imprimir" data-id="${r.id}">Imprimir</button>
+          ${r.scan_path
+            ? `<button class="btn sec peq" data-acao="ver" data-id="${r.id}">Ver scan</button>`
+            : ""}
+          ${(!r.scan_path || isGestor())
+            ? `<button class="btn sec peq" data-acao="anexar" data-id="${r.id}">${r.scan_path ? "Trocar scan" : "Anexar scan"}</button>`
+            : ""}
+          ${isGestor() ? `<button class="btn perigo peq" data-acao="excluir" data-id="${r.id}">Excluir</button>` : ""}
+        </div></td>
+      </tr>`;
+    }).join("");
+  }
+  carregarPendencias();
+}
+
+async function carregarPendencias() {
+  const { data } = await sb.from("v_pendencias_scan").select("numero");
+  const n = data?.length || 0;
+  $("#aviso-pendencias").innerHTML = n
+    ? `<div class="aviso">${n} ${n === 1 ? "requisição está" : "requisições estão"} sem o scan assinado: ${data.map((d) => esc(d.numero)).join(", ")}.</div>`
+    : "";
+}
+
+$("#lista-req").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-acao]");
+  if (!b) return;
+  const r = estado.reqs.find((x) => x.id === b.dataset.id);
+  if (!r) return;
+  if (b.dataset.acao === "imprimir") imprimir(r, estado.itensPorReq[r.id] || []);
+  if (b.dataset.acao === "anexar") { estado.reqScanAlvo = r; $("#input-scan").value = ""; $("#input-scan").click(); }
+  if (b.dataset.acao === "ver") verScan(r);
+  if (b.dataset.acao === "excluir") excluirReq(r);
+});
+
+// ---------- Nova requisição ----------
+$("#btn-nova").addEventListener("click", abrirNova);
+$("#btn-cancelar").addEventListener("click", () => $("#modal-req").close());
+$("#btn-add-item").addEventListener("click", () => addItemLinha());
+
+async function abrirNova() {
+  $("#form-req").reset();
+  $("#req-erro").textContent = "";
+  $("#req-itens").innerHTML = "";
+
+  const [{ count }, sug] = await Promise.all([
+    sb.from("requisicoes").select("id", { count: "exact", head: true }).eq("dia", hojeSP()).is("excluido_em", null),
+    sb.from("v_sugestao_retirada").select("produto_id,sugestao,saldo_cozinha,saldo_principal,ideal_hoje"),
+  ]);
+  const extra = (count || 0) > 0;
+  $("#aviso-extra").classList.toggle("oculto", !extra);
+  $("#bloco-extra").classList.toggle("oculto", !extra);
+  $("#req-just").required = extra;
+
+  estado.sugestoes = {};
+  (sug.data || []).forEach((s) => (estado.sugestoes[s.produto_id] = s));
+  const comSugestao = (sug.data || []).filter((s) => Number(s.sugestao) > 0);
+
+  if (!extra && comSugestao.length) {
+    comSugestao.forEach((s) => addItemLinha(s.produto_id, s.sugestao));
+  } else {
+    addItemLinha();
+  }
+  $("#modal-req").showModal();
+  $("#req-resp").focus();
+}
+
+function addItemLinha(produtoId = "", qtd = "") {
+  const div = document.createElement("div");
+  div.innerHTML = `
+    <div class="item-linha">
+      <select aria-label="Produto" required>
+        <option value="">Produto</option>
+        ${estado.produtos.map((p) => `<option value="${p.id}" ${p.id === produtoId ? "selected" : ""}>${esc(p.nome)}${p.gramatura_g ? ` (${fmtQtd(p.gramatura_g)} g)` : ""}</option>`).join("")}
+      </select>
+      <input type="number" aria-label="Quantidade em porções" min="0.01" step="0.01" placeholder="Porções" value="${qtd}" required>
+      <button type="button" aria-label="Remover item">✕</button>
+    </div>
+    <div class="sugestao"></div>`;
+  const sel = div.querySelector("select");
+  const atualizarSug = () => {
+    const s = estado.sugestoes[sel.value];
+    div.querySelector(".sugestao").textContent = s
+      ? `Ideal hoje ${fmtQtd(s.ideal_hoje)} | cozinha ${fmtQtd(s.saldo_cozinha)} | principal ${fmtQtd(s.saldo_principal)} | sugestão ${fmtQtd(s.sugestao)}`
+      : "";
+  };
+  sel.addEventListener("change", atualizarSug);
+  div.querySelector("button").addEventListener("click", () => div.remove());
+  $("#req-itens").appendChild(div);
+  atualizarSug();
+}
+
+$("#form-req").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("#req-erro").textContent = "";
+  const linhas = [...$("#req-itens").querySelectorAll(".item-linha")];
+  const itens = linhas.map((l) => ({
+    produto_id: l.querySelector("select").value,
+    quantidade: Number(l.querySelector("input").value),
+  })).filter((i) => i.produto_id && i.quantidade > 0);
+
+  const ids = itens.map((i) => i.produto_id);
+  if (new Set(ids).size !== ids.length) return ($("#req-erro").textContent = "Há produtos repetidos. Some as quantidades numa linha só.");
+  if (!itens.length) return ($("#req-erro").textContent = "Inclua ao menos um item.");
+
+  const btn = $("#btn-salvar-req");
+  btn.disabled = true;
+  const { data, error } = await sb.rpc("criar_requisicao", {
+    p_responsavel: $("#req-resp").value,
+    p_itens: itens,
+    p_justificativa: $("#req-just").value ? Number($("#req-just").value) : null,
+    p_comentario: $("#req-coment").value || null,
+  });
+  btn.disabled = false;
+  if (error) return ($("#req-erro").textContent = msgErro(error));
+
+  $("#modal-req").close();
+  toast(`Requisição ${data.numero} criada.`);
+  const itensImp = itens.map((i) => ({
+    quantidade: i.quantidade,
+    produtos: estado.produtos.find((p) => p.id === i.produto_id),
+  }));
+  const just = estado.justificativas.find((j) => j.id === data.justificativa_extra_id);
+  imprimir({ ...data, justificativa_extra: just?.nome }, itensImp);
+  carregarRequisicoes();
+});
+
+// ---------- Impressão ----------
+function imprimir(r, itens) {
+  $("#impressao").innerHTML = `
+    <div class="imp-cab">
+      <div><h1>Requisição de retirada</h1><div>Câmara principal → câmara da cozinha<br>Ilha do Caranguejo</div></div>
+      <div class="imp-num">${esc(r.numero)}</div>
+    </div>
+    <div class="imp-dados">
+      <div><strong>Data e hora:</strong> ${fmtDataHora(r.data_hora)}</div>
+      <div><strong>Responsável pela retirada:</strong> ${esc(r.responsavel_retirada)}</div>
+      ${r.justificativa_extra ? `<div><strong>Retirada extra:</strong> ${esc(r.justificativa_extra)}${r.comentario ? ` (${esc(r.comentario)})` : ""}</div>` : ""}
+    </div>
+    <table>
+      <thead><tr><th>Produto</th><th class="num">Porções</th></tr></thead>
+      <tbody>${itens.map((i) => `<tr><td>${esc(i.produtos?.nome)}${i.produtos?.gramatura_g ? ` (${fmtQtd(i.produtos.gramatura_g)} g)` : ""}</td><td class="num">${fmtQtd(i.quantidade)}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="assinaturas">
+      <div>GESTÃO<small>Nome:</small></div>
+      <div>RESPONSÁVEL PELA RETIRADA<small>Nome:</small></div>
+    </div>`;
+  setTimeout(() => window.print(), 50);
+}
+
+// ---------- Scan ----------
+$("#input-scan").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0];
+  const r = estado.reqScanAlvo;
+  if (!f || !r) return;
+  if (f.size > 10 * 1024 * 1024) return toast("Arquivo acima de 10 MB. Reduza a resolução do scan.");
+  const ext = (f.name.split(".").pop() || "pdf").toLowerCase();
+  const path = `${r.dia.slice(0, 7)}/${r.numero}_${Date.now()}.${ext}`;
+  toast("Enviando scan…");
+  const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type });
+  if (up.error) return toast(msgErro(up.error));
+  const { error } = await sb.rpc("anexar_scan", { p_requisicao: r.id, p_path: path });
+  if (error) return toast(msgErro(error));
+  toast(`Scan anexado à ${r.numero}.`);
+  carregarRequisicoes();
+});
+
+async function verScan(r) {
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(r.scan_path, 300);
+  if (error) return toast(msgErro(error));
+  window.open(data.signedUrl, "_blank", "noopener");
+}
+
+// ---------- Exclusão (gestão) ----------
+async function excluirReq(r) {
+  const motivo = prompt(`Excluir ${r.numero}? Os itens voltam para o saldo da câmara principal.\n\nMotivo da exclusão:`);
+  if (motivo === null) return;
+  if (!motivo.trim()) return toast("Informe o motivo para excluir.");
+  const { error } = await sb.from("requisicoes").update({
+    excluido_em: new Date().toISOString(),
+    excluido_por: estado.perfil.id,
+    motivo_exclusao: motivo.trim(),
+  }).eq("id", r.id);
+  if (error) return toast(msgErro(error));
+  toast(`${r.numero} excluída.`);
+  carregarRequisicoes();
+}
+
+// ================= SALDOS =================
+$("#so-criticos").addEventListener("change", carregarSaldos);
+
+async function carregarSaldos() {
+  const { data, error } = await sb.from("v_saldo_atual").select("produto_id,nome,local,saldo,ultima_contagem");
+  if (error) return toast(msgErro(error));
+  const critico = Object.fromEntries(estado.produtos.map((p) => [p.id, p.critico]));
+  const porProduto = {};
+  data.forEach((s) => {
+    porProduto[s.produto_id] ??= { nome: s.nome, critico: critico[s.produto_id] };
+    porProduto[s.produto_id][s.local] = s;
+  });
+  let lista = Object.values(porProduto);
+  if ($("#so-criticos").checked) lista = lista.filter((p) => p.critico);
+  lista.sort((a, b) => (b.critico - a.critico) || a.nome.localeCompare(b.nome));
+
+  const linha = (rotulo, s) => `
+    <div class="saldo-linha"><span>${rotulo}</span>
+      <span class="saldo-valor ${Number(s?.saldo) < 0 ? "neg" : ""}">${fmtQtd(s?.saldo ?? 0)}</span>
+    </div>`;
+  const ult = (s) => s?.ultima_contagem ? fmtDataHora(s.ultima_contagem) : "nunca";
+
+  $("#lista-saldos").innerHTML = lista.length ? lista.map((p) => `
+    <article class="saldo-card ${p.critico ? "critico" : ""}">
+      <h3>${esc(p.nome)}</h3>
+      ${linha("Câmara principal", p.PRINCIPAL)}
+      ${linha("Cozinha", p.COZINHA)}
+      <div class="saldo-rodape">Última contagem: principal ${ult(p.PRINCIPAL)}, cozinha ${ult(p.COZINHA)}</div>
+    </article>`).join("")
+    : `<div class="vazio">Nenhum produto cadastrado.</div>`;
+}
+
+</script>
+</body>
+</html>
