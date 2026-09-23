@@ -8,18 +8,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root {
-  --gelo: #EDF2F4;
-  --papel: #FFFFFF;
-  --tinta: #13262F;
-  --tinta-2: #4A5F69;
-  --linha: #CBD7DD;
-  --mare: #0F5C6B;
-  --mare-escura: #0A4652;
-  --casco: #B3342B;
-  --ambar: #9A5F0C;
-  --ok: #2E6B3F;
+  --gelo: #EDF2F4; --papel: #FFFFFF; --tinta: #13262F; --tinta-2: #4A5F69;
+  --linha: #CBD7DD; --linha-2: #E3EAED; --mare: #0F5C6B; --mare-escura: #0A4652;
+  --casco: #B3342B; --ambar: #9A5F0C; --ok: #2E6B3F;
   --sans: "Barlow", "Segoe UI", system-ui, sans-serif;
   --cond: "Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif;
   box-sizing: border-box;
@@ -28,136 +24,109 @@
 }
 *, *::before, *::after { box-sizing: inherit; }
 html, body { margin: 0; }
-body {
-  background: var(--gelo);
-  color: var(--tinta);
-  font: 400 16px/1.5 var(--sans);
-  font-variant-numeric: tabular-nums;
-}
+body { background: var(--gelo); color: var(--tinta); font: 400 16px/1.5 var(--sans); font-variant-numeric: tabular-nums; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--mare); outline-offset: 2px; }
 .oculto { display: none !important; }
 
-/* ---------- Login ---------- */
-#login {
-  min-height: 100vh; display: grid; place-items: center; padding: 24px;
-}
-.login-box {
-  width: 100%; max-width: 360px; background: var(--papel);
-  border: 1px solid var(--linha); border-radius: 6px; padding: 28px;
-}
-.login-box h1 {
-  font: 700 28px/1.1 var(--cond); margin: 0 0 4px;
-}
+#login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login-box { width: 100%; max-width: 360px; background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 28px; }
+.login-box h1 { font: 700 28px/1.1 var(--cond); margin: 0 0 4px; }
 .login-box p { margin: 0 0 20px; color: var(--tinta-2); }
 
-/* ---------- Estrutura ---------- */
-header {
-  background: var(--tinta); color: var(--papel);
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-}
-.barra {
-  max-width: 1080px; margin: 0 auto; padding: 12px 20px;
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-}
+header { background: var(--tinta); color: var(--papel); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+.barra { max-width: 1180px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .marca { font: 700 20px/1 var(--cond); margin-right: auto; }
 .marca small { font: 500 14px var(--sans); opacity: .7; margin-left: 8px; }
 .usuario { font-size: 14px; opacity: .85; }
-nav { display: flex; gap: 4px; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-nav button {
-  background: none; border: 0; color: #B9CBD2; padding: 10px 14px;
-  font: 600 16px var(--cond); cursor: pointer; border-bottom: 3px solid transparent;
-}
+nav { display: flex; gap: 2px; max-width: 1180px; margin: 0 auto; padding: 0 20px; overflow-x: auto; scrollbar-width: thin; }
+nav button { background: none; border: 0; color: #B9CBD2; padding: 10px 12px; font: 600 16px var(--cond); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
 nav button[aria-selected="true"] { color: var(--papel); border-bottom-color: #7FC3CF; }
-main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
 h2 { font: 700 26px/1.15 var(--cond); margin: 0; }
-.topo-secao { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.topo-secao h2 { margin-right: auto; }
+h3 { font: 700 19px/1.2 var(--cond); margin: 0 0 10px; }
+.topo-secao { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.topo-secao h2 { margin-right: auto; align-self: center; }
+.filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+.filtros .campo { margin: 0; }
+.filtros input, .filtros select { width: auto; }
+.chk { display: flex; gap: 6px; align-items: center; color: var(--tinta); font-size: 15px; margin: 0; padding-bottom: 10px; }
+.chk input { width: auto; }
+.subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.subnav button { border: 1px solid var(--linha); background: var(--papel); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+.subnav button[aria-selected="true"] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
 
-/* ---------- Controles ---------- */
 label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 4px; color: var(--tinta-2); }
-input, select, textarea {
-  width: 100%; padding: 10px 12px; background: var(--papel);
-  border: 1px solid var(--linha); border-radius: 4px;
-}
+input, select, textarea { width: 100%; padding: 9px 11px; background: var(--papel); border: 1px solid var(--linha); border-radius: 4px; }
 textarea { min-height: 70px; resize: vertical; }
 .campo { margin-bottom: 14px; }
-.btn {
-  border: 1px solid var(--mare); background: var(--mare); color: var(--papel);
-  padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;
-}
+.btn { border: 1px solid var(--mare); background: var(--mare); color: var(--papel); padding: 9px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; white-space: nowrap; }
 .btn:hover { background: var(--mare-escura); }
 .btn:disabled { opacity: .5; cursor: wait; }
 .btn.sec { background: var(--papel); color: var(--mare); }
 .btn.sec:hover { background: #E3EEF1; }
 .btn.perigo { background: var(--papel); color: var(--casco); border-color: var(--casco); }
-.btn.peq { padding: 6px 10px; font-size: 14px; }
+.btn.peq { padding: 5px 10px; font-size: 14px; }
 .btn.bloco { width: 100%; }
 .erro { color: var(--casco); font-size: 14px; min-height: 20px; margin-top: 8px; }
+.dica { color: var(--tinta-2); font-size: 14px; margin: 0 0 12px; }
 
-/* ---------- Tabelas ---------- */
-.tabela-wrap { overflow-x: auto; background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; }
+.tabela-wrap { overflow-x: auto; background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--linha-2); vertical-align: top; }
 th { font: 600 14px var(--cond); color: var(--tinta-2); background: #F6F9FA; white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
 td.num, th.num { text-align: right; }
+tr.grupo td { background: #F0F5F7; font: 700 15px var(--cond); color: var(--tinta); padding-top: 12px; }
+tr.critico td:first-child { box-shadow: inset 4px 0 0 var(--mare); }
+td input.qtd { width: 110px; text-align: right; }
+td input.mini { width: 88px; text-align: right; padding: 6px 8px; }
 .numero-req { font: 700 16px var(--cond); white-space: nowrap; }
 .itens-lista { margin: 0; padding: 0; list-style: none; font-size: 15px; }
 .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
-.selo {
-  display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 8px;
-  border-radius: 3px; white-space: nowrap;
-}
-.selo.extra { background: #F8E3E1; color: var(--casco); }
+.selo { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+.selo.extra, .selo.ruim { background: #F8E3E1; color: var(--casco); }
 .selo.pend { background: #F7EBD7; color: var(--ambar); }
 .selo.ok { background: #E0EEE3; color: var(--ok); }
-.vazio { padding: 32px; text-align: center; color: var(--tinta-2); }
+.selo.neutro { background: var(--linha-2); color: var(--tinta-2); }
+.vazio { padding: 28px; text-align: center; color: var(--tinta-2); }
+.neg { color: var(--casco); font-weight: 600; }
+.pos { color: var(--ok); }
 
-/* ---------- Aviso ---------- */
-.aviso {
-  border-left: 4px solid var(--ambar); background: #FBF3E6;
-  padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0;
-}
+.aviso { border-left: 4px solid var(--ambar); background: #FBF3E6; padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0; }
 .aviso.extra { border-left-color: var(--casco); background: #FBEBE9; }
 
-/* ---------- Saldos ---------- */
-.saldos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.saldo-card {
-  background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 14px 16px;
-}
+.painel { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.bloco { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 16px; }
+.bloco .tabela-wrap { border: 0; margin: 0; }
+.bloco ul { margin: 0; padding-left: 18px; }
+.indicadores { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.indicador { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 12px 16px; min-width: 180px; flex: 1; }
+.indicador span { display: block; font-size: 14px; color: var(--tinta-2); }
+.indicador strong { font: 700 30px/1.15 var(--cond); }
+
+.saldos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.saldo-card { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 14px 16px; }
 .saldo-card.critico { border-left: 4px solid var(--mare); }
-.saldo-card h3 { font: 600 17px/1.2 var(--cond); margin: 0 0 10px; }
+.saldo-card h4 { font: 600 16px/1.2 var(--cond); margin: 0 0 10px; }
 .saldo-linha { display: flex; align-items: baseline; justify-content: space-between; }
 .saldo-linha span { color: var(--tinta-2); font-size: 14px; }
-.saldo-valor { font: 700 34px/1.1 var(--cond); }
-.saldo-valor.neg { color: var(--casco); }
+.saldo-valor { font: 700 32px/1.1 var(--cond); }
 .saldo-rodape { font-size: 13px; color: var(--tinta-2); margin-top: 8px; }
+.cat-titulo { font: 700 18px var(--cond); margin: 18px 0 10px; color: var(--tinta-2); }
 
-/* ---------- Modal ---------- */
-dialog {
-  border: 0; border-radius: 8px; padding: 0; width: min(640px, calc(100% - 24px));
-  max-height: calc(100% - 48px);
-}
+dialog { border: 0; border-radius: 8px; padding: 0; width: min(680px, calc(100% - 24px)); max-height: calc(100% - 48px); }
 dialog::backdrop { background: rgba(19, 38, 47, .55); }
 .modal-cab { padding: 18px 20px 0; }
 .modal-corpo { padding: 16px 20px; }
-.modal-pe {
-  padding: 14px 20px; border-top: 1px solid var(--linha);
-  display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
-}
+.modal-pe { padding: 14px 20px; border-top: 1px solid var(--linha); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .item-linha { display: grid; grid-template-columns: 1fr 110px 40px; gap: 8px; margin-bottom: 8px; }
 .item-linha button { border: 1px solid var(--linha); background: var(--papel); border-radius: 4px; cursor: pointer; }
 .sugestao { font-size: 13px; color: var(--tinta-2); margin: -4px 0 10px; }
+.barra-acao { position: sticky; bottom: env(safe-area-inset-bottom, 0px); background: var(--gelo); padding: 12px 0; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--linha); }
 
-/* ---------- Toast ---------- */
-#toast {
-  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%); background: var(--tinta); color: var(--papel);
-  padding: 10px 16px; border-radius: 4px; z-index: 20; max-width: calc(100% - 32px);
-}
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--tinta); color: var(--papel); padding: 10px 16px; border-radius: 4px; z-index: 50; max-width: calc(100% - 32px); }
 
-/* ---------- Impressão ---------- */
 #impressao { display: none; }
 @media print {
   body { background: #fff; }
@@ -174,37 +143,28 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
   .assinaturas div { border-top: 1px solid #000; padding-top: 6px; text-align: center; font-weight: 600; }
   .assinaturas small { display: block; font-weight: 400; margin-top: 18px; text-align: left; }
 }
-
 @media (max-width: 640px) {
   main { padding: 16px 12px 64px; }
   .barra { padding: 10px 12px; }
   nav { padding: 0 12px; }
   th, td { padding: 8px; }
+  td input.qtd { width: 84px; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
 <section id="login" class="oculto">
   <form class="login-box" id="form-login">
     <h1>Controle de CMV</h1>
     <p>Ilha do Caranguejo</p>
-    <div class="campo">
-      <label for="login-email">E-mail</label>
-      <input id="login-email" type="email" autocomplete="username" required>
-    </div>
-    <div class="campo">
-      <label for="login-senha">Senha</label>
-      <input id="login-senha" type="password" autocomplete="current-password" required>
-    </div>
+    <div class="campo"><label for="login-email">E-mail</label><input id="login-email" type="email" autocomplete="username" required></div>
+    <div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>
     <button class="btn bloco" type="submit">Entrar</button>
     <div class="erro" id="login-erro"></div>
   </form>
 </section>
 
-<!-- ================= APP ================= -->
 <div id="app" class="oculto">
   <header>
     <div class="barra">
@@ -212,68 +172,247 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
       <span class="usuario" id="usuario-nome"></span>
       <button class="btn sec peq" id="btn-sair">Sair</button>
     </div>
-    <nav role="tablist">
-      <button role="tab" data-aba="requisicoes" aria-selected="true">Requisições</button>
-      <button role="tab" data-aba="saldos" aria-selected="false">Saldos</button>
+    <nav role="tablist" id="nav">
+      <button role="tab" data-aba="painel" aria-selected="true">Painel</button>
+      <button role="tab" data-aba="requisicoes">Requisições</button>
+      <button role="tab" data-aba="contagem">Contagem</button>
+      <button role="tab" data-aba="saidas">Saídas</button>
+      <button role="tab" data-aba="entradas">Entradas</button>
+      <button role="tab" data-aba="desvios" data-gestor>Desvios</button>
+      <button role="tab" data-aba="saldos" data-gestor>Saldos</button>
+      <button role="tab" data-aba="extrato" data-gestor>Movimentação</button>
+      <button role="tab" data-aba="relatorios">Relatórios</button>
+      <button role="tab" data-aba="cadastros" data-gestor>Cadastros</button>
+      <button role="tab" data-aba="auditoria" data-gestor>Auditoria</button>
     </nav>
   </header>
 
   <main>
-    <!-- Requisições -->
-    <section id="aba-requisicoes">
+    <!-- PAINEL -->
+    <section id="aba-painel">
+      <div class="topo-secao"><h2>Painel</h2><button class="btn sec peq" id="painel-atualizar">Atualizar</button></div>
+      <div class="indicadores" id="painel-ind"></div>
+      <div class="painel" id="painel-blocos"></div>
+    </section>
+
+    <!-- REQUISIÇÕES -->
+    <section id="aba-requisicoes" class="oculto">
       <div class="topo-secao">
         <h2>Requisições</h2>
         <input type="date" id="filtro-dia" aria-label="Filtrar por dia" style="width:auto">
         <button class="btn" id="btn-nova">Nova requisição</button>
       </div>
       <div id="aviso-pendencias"></div>
-      <div class="tabela-wrap">
-        <table>
-          <thead>
-            <tr><th>Número</th><th>Data e hora</th><th>Retirada por</th><th>Itens</th><th>Situação</th><th></th></tr>
-          </thead>
-          <tbody id="lista-req"></tbody>
-        </table>
+      <div class="tabela-wrap"><table>
+        <thead><tr><th>Número</th><th>Data e hora</th><th>Retirada por</th><th>Itens</th><th>Situação</th><th></th></tr></thead>
+        <tbody id="lista-req"></tbody>
+      </table></div>
+    </section>
+
+    <!-- CONTAGEM -->
+    <section id="aba-contagem" class="oculto">
+      <div class="topo-secao"><h2>Contagem</h2></div>
+      <div class="filtros">
+        <div class="campo"><label for="cont-tipo">Tipo</label>
+          <select id="cont-tipo">
+            <option value="DIARIA">Diária (itens críticos, cozinha)</option>
+            <option value="CHECK">Check de quarta/sexta (cozinha)</option>
+            <option value="GERAL">Inventário geral de segunda</option>
+          </select></div>
+        <div class="campo"><label for="cont-local">Local</label>
+          <select id="cont-local"><option value="COZINHA">Câmara da cozinha</option><option value="PRINCIPAL">Câmara principal</option></select></div>
+        <div class="campo"><label for="cont-data">Data e hora da contagem</label><input type="datetime-local" id="cont-data"></div>
+        <div class="campo"><label for="cont-busca">Buscar produto</label><input id="cont-busca" placeholder="Nome"></div>
+      </div>
+      <p class="dica">Contagem cega: o sistema não mostra o saldo esperado. Deixe em branco o que não foi contado; digite 0 para o que acabou.</p>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Contado</th></tr></thead><tbody id="cont-grid"></tbody></table></div>
+      <div class="campo"><label for="cont-obs">Observação (opcional)</label><input id="cont-obs"></div>
+      <div class="barra-acao"><span id="cont-resumo" class="dica" style="margin:0"></span><button class="btn" id="cont-salvar">Salvar contagem</button></div>
+      <div id="cont-resultado"></div>
+      <h3 style="margin-top:24px">Contagens recentes</h3>
+      <div class="tabela-wrap"><table><thead><tr><th>Data e hora</th><th>Local</th><th>Tipo</th><th class="num">Itens</th><th>Responsável</th><th></th></tr></thead><tbody id="cont-lista"></tbody></table></div>
+    </section>
+
+    <!-- SAÍDAS -->
+    <section id="aba-saidas" class="oculto">
+      <div class="topo-secao"><h2>Saídas da cozinha</h2></div>
+      <div class="filtros">
+        <div class="campo"><label for="sai-tipo">Tipo de saída</label><select id="sai-tipo"></select></div>
+        <div class="campo"><label for="sai-data">Data e hora</label><input type="datetime-local" id="sai-data"></div>
+        <div class="campo"><label for="sai-busca">Buscar produto</label><input id="sai-busca" placeholder="Nome"></div>
+        <label class="chk"><input type="checkbox" id="sai-criticos" checked> Só itens críticos</label>
+      </div>
+      <p class="dica">Venda é o consumo teórico. Informe a quantidade de cada produto que saiu da cozinha.</p>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Quantidade</th></tr></thead><tbody id="sai-grid"></tbody></table></div>
+      <div class="campo"><label for="sai-obs">Observação (opcional)</label><input id="sai-obs"></div>
+      <div class="barra-acao"><span id="sai-resumo" class="dica" style="margin:0"></span><button class="btn" id="sai-salvar">Lançar saídas</button></div>
+      <h3 style="margin-top:24px">Saídas lançadas</h3>
+      <div class="filtros"><div class="campo"><label for="sai-filtro-dia">Dia</label><input type="date" id="sai-filtro-dia"></div></div>
+      <div class="tabela-wrap"><table><thead><tr><th>Data e hora</th><th>Produto</th><th>Tipo</th><th class="num">Qtd</th><th>Obs.</th><th></th></tr></thead><tbody id="sai-lista"></tbody></table></div>
+    </section>
+
+    <!-- ENTRADAS -->
+    <section id="aba-entradas" class="oculto">
+      <div class="topo-secao"><h2>Entradas na câmara principal</h2></div>
+      <div class="filtros">
+        <div class="campo"><label for="ent-data">Data e hora</label><input type="datetime-local" id="ent-data"></div>
+        <div class="campo"><label for="ent-busca">Buscar produto</label><input id="ent-busca" placeholder="Nome"></div>
+      </div>
+      <p class="dica">Produtos recebidos do CD.</p>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Quantidade</th></tr></thead><tbody id="ent-grid"></tbody></table></div>
+      <div class="campo"><label for="ent-obs">Observação (opcional)</label><input id="ent-obs"></div>
+      <div class="barra-acao"><span id="ent-resumo" class="dica" style="margin:0"></span><button class="btn" id="ent-salvar">Lançar entradas</button></div>
+      <h3 style="margin-top:24px">Entradas lançadas</h3>
+      <div class="filtros"><div class="campo"><label for="ent-filtro-dia">Dia</label><input type="date" id="ent-filtro-dia"></div></div>
+      <div class="tabela-wrap"><table><thead><tr><th>Data e hora</th><th>Produto</th><th class="num">Qtd</th><th>Obs.</th><th></th></tr></thead><tbody id="ent-lista"></tbody></table></div>
+    </section>
+
+    <!-- DESVIOS -->
+    <section id="aba-desvios" class="oculto">
+      <div class="topo-secao"><h2>Desvios</h2>
+        <button class="btn sec peq" data-exp="desvios" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="desvios" data-fmt="pdf">PDF</button>
+      </div>
+      <div class="filtros">
+        <div class="campo"><label for="dev-de">De</label><input type="date" id="dev-de"></div>
+        <div class="campo"><label for="dev-ate">Até</label><input type="date" id="dev-ate"></div>
+        <div class="campo"><label for="dev-local">Local</label>
+          <select id="dev-local"><option value="COZINHA">Cozinha</option><option value="PRINCIPAL">Câmara principal</option><option value="">Ambos</option></select></div>
+        <label class="chk"><input type="checkbox" id="dev-criticos"> Só críticos</label>
+        <label class="chk"><input type="checkbox" id="dev-fora"> Só fora da tolerância</label>
+      </div>
+      <p class="dica">Desvio positivo é falta (sumiu); negativo é sobra. Calculado entre duas contagens seguidas do mesmo produto.</p>
+      <div class="indicadores" id="dev-ind"></div>
+      <h3>Por produto</h3>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Ocorrências</th><th class="num">Desvio (qtd)</th><th class="num">Desvio (R$)</th></tr></thead><tbody id="dev-rank"></tbody></table></div>
+      <h3>Detalhe</h3>
+      <div class="tabela-wrap"><table><thead><tr><th>Contagem</th><th>Produto</th><th>Local</th><th class="num">Anterior</th><th class="num">Entrou</th><th class="num">Saiu</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Desvio</th><th class="num">R$</th><th>Justificativa</th></tr></thead><tbody id="dev-lista"></tbody></table></div>
+    </section>
+
+    <!-- SALDOS -->
+    <section id="aba-saldos" class="oculto">
+      <div class="topo-secao"><h2>Saldos</h2>
+        <button class="btn sec peq" data-exp="saldos" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="saldos" data-fmt="pdf">PDF</button>
+      </div>
+      <div class="filtros">
+        <div class="campo"><label for="sal-busca">Buscar produto</label><input id="sal-busca" placeholder="Nome"></div>
+        <label class="chk"><input type="checkbox" id="so-criticos"> Só itens críticos</label>
+      </div>
+      <p class="dica">Saldo = última contagem + movimentos depois dela.</p>
+      <div id="lista-saldos"></div>
+    </section>
+
+    <!-- EXTRATO -->
+    <section id="aba-extrato" class="oculto">
+      <div class="topo-secao"><h2>Movimentação por produto</h2>
+        <button class="btn sec peq" data-exp="extrato" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="extrato" data-fmt="pdf">PDF</button>
+      </div>
+      <div class="filtros">
+        <div class="campo"><label for="ext-produto">Produto</label><select id="ext-produto" style="min-width:280px"></select></div>
+        <div class="campo"><label for="ext-local">Local</label>
+          <select id="ext-local"><option value="COZINHA">Cozinha</option><option value="PRINCIPAL">Câmara principal</option></select></div>
+      </div>
+      <p class="dica" data-gestor>Editar ou excluir recalcula saldos e desvios. Tudo fica registrado na auditoria.</p>
+      <div class="tabela-wrap"><table><thead><tr><th>Data e hora</th><th>Operação</th><th>Detalhe</th><th class="num">Movimento</th><th class="num">Contado</th><th class="num">Saldo</th><th data-gestor></th></tr></thead><tbody id="ext-lista"></tbody></table></div>
+    </section>
+
+    <!-- RELATÓRIOS -->
+    <section id="aba-relatorios" class="oculto">
+      <div class="topo-secao"><h2>Relatórios</h2>
+        <button class="btn sec peq" data-exp="relatorio" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="relatorio" data-fmt="pdf">PDF</button>
+      </div>
+      <div class="filtros">
+        <div class="campo"><label for="rel-tipo">Relatório</label>
+          <select id="rel-tipo">
+            <option value="retiradas">Retiradas por produto (ranking e média)</option>
+            <option value="retiradas-det">Retiradas detalhadas</option>
+            <option value="consumo">Consumo da cozinha por tipo de saída</option>
+          </select></div>
+        <div class="campo"><label for="rel-de">De</label><input type="date" id="rel-de"></div>
+        <div class="campo"><label for="rel-ate">Até</label><input type="date" id="rel-ate"></div>
+        <button class="btn" id="rel-gerar">Gerar</button>
+      </div>
+      <p class="dica">Para ver quanto foi retirado numa data específica, use a mesma data em "De" e "Até".</p>
+      <div id="rel-ind" class="indicadores"></div>
+      <div class="tabela-wrap"><table><thead id="rel-head"></thead><tbody id="rel-body"><tr><td class="vazio">Escolha o relatório e o período.</td></tr></tbody></table></div>
+    </section>
+
+    <!-- CADASTROS -->
+    <section id="aba-cadastros" class="oculto">
+      <div class="topo-secao"><h2>Cadastros</h2></div>
+      <div class="subnav" id="cad-nav">
+        <button data-sub="produtos" aria-selected="true">Produtos</button>
+        <button data-sub="precos">Preços</button>
+        <button data-sub="ideal">Estoque ideal</button>
+        <button data-sub="tipos">Tipos de saída</button>
+        <button data-sub="justs">Justificativas</button>
+      </div>
+
+      <div id="cad-produtos">
+        <p class="dica">Tolerância: o desvio só alerta quando passa do maior entre a quantidade fixa e o percentual das saídas do período.</p>
+        <div class="filtros">
+          <div class="campo"><label for="cadp-busca">Buscar</label><input id="cadp-busca" placeholder="Nome"></div>
+          <button class="btn sec" id="cadp-novo">Novo produto</button>
+        </div>
+        <div class="tabela-wrap"><table><thead><tr><th>Nome</th><th>Categoria</th><th>Un.</th><th class="num">Gramatura (g)</th><th>Crítico</th><th class="num">Tol. qtd</th><th class="num">Tol. %</th><th>Ativo</th><th></th></tr></thead><tbody id="cadp-lista"></tbody></table></div>
+        <datalist id="lista-categorias"></datalist>
+      </div>
+
+      <div id="cad-precos" class="oculto">
+        <p class="dica">Preço por unidade de controle (porção, kg ou pacote). Cada preço vale a partir da data de vigência; desvios antigos continuam com o preço da época.</p>
+        <div class="filtros">
+          <div class="campo"><label for="pre-vig">Vigência a partir de</label><input type="date" id="pre-vig"></div>
+          <div class="campo"><label for="pre-busca">Buscar</label><input id="pre-busca" placeholder="Nome"></div>
+        </div>
+        <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th>Un.</th><th class="num">Preço vigente hoje</th><th>Desde</th><th class="num">Novo preço (R$)</th></tr></thead><tbody id="pre-lista"></tbody></table></div>
+        <div class="barra-acao"><button class="btn" id="pre-salvar">Salvar preços</button></div>
+      </div>
+
+      <div id="cad-ideal" class="oculto">
+        <p class="dica">Quantidade mínima que a cozinha deve ter em cada dia. A requisição sugere: ideal do dia − saldo da cozinha.</p>
+        <div class="filtros"><div class="campo"><label for="ide-busca">Buscar</label><input id="ide-busca" placeholder="Nome"></div></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Dom</th><th class="num">Seg</th><th class="num">Ter</th><th class="num">Qua</th><th class="num">Qui</th><th class="num">Sex</th><th class="num">Sáb</th></tr></thead><tbody id="ide-lista"></tbody></table></div>
+        <div class="barra-acao"><button class="btn" id="ide-salvar">Salvar estoque ideal</button></div>
+      </div>
+
+      <div id="cad-tipos" class="oculto">
+        <div class="filtros"><div class="campo"><label for="tipo-novo">Novo tipo de saída</label><input id="tipo-novo"></div><button class="btn" id="tipo-add">Adicionar</button></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Tipo</th><th>Ativo</th></tr></thead><tbody id="tipo-lista"></tbody></table></div>
+      </div>
+
+      <div id="cad-justs" class="oculto">
+        <div class="filtros"><div class="campo"><label for="just-novo">Nova justificativa de retirada extra</label><input id="just-novo"></div><button class="btn" id="just-add">Adicionar</button></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Justificativa</th><th>Ativo</th></tr></thead><tbody id="just-lista"></tbody></table></div>
       </div>
     </section>
 
-    <!-- Saldos -->
-    <section id="aba-saldos" class="oculto">
-      <div class="topo-secao">
-        <h2>Saldos</h2>
-        <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--tinta)">
-          <input type="checkbox" id="so-criticos" style="width:auto"> Só itens críticos
-        </label>
+    <!-- AUDITORIA -->
+    <section id="aba-auditoria" class="oculto">
+      <div class="topo-secao"><h2>Auditoria</h2></div>
+      <div class="filtros">
+        <div class="campo"><label for="aud-acao">Ação</label>
+          <select id="aud-acao"><option value="">Todas</option><option value="EDICAO">Edições</option><option value="EXCLUSAO">Exclusões</option><option value="INSERT">Lançamentos</option></select></div>
       </div>
-      <div class="saldos" id="lista-saldos"></div>
+      <div class="tabela-wrap"><table><thead><tr><th>Data e hora</th><th>Usuário</th><th>Onde</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody id="aud-lista"></tbody></table></div>
     </section>
   </main>
 </div>
 
-<!-- ================= MODAL NOVA REQUISIÇÃO ================= -->
 <dialog id="modal-req">
   <form id="form-req" method="dialog">
     <div class="modal-cab"><h2>Nova requisição</h2></div>
     <div class="modal-corpo">
-      <div id="aviso-extra" class="aviso extra oculto">
-        Já existe retirada hoje. Esta será uma <strong>retirada extra</strong> e precisa de justificativa.
-      </div>
-      <div class="campo">
-        <label for="req-resp">Responsável pela retirada</label>
-        <input id="req-resp" required autocomplete="off">
-      </div>
+      <div id="aviso-extra" class="aviso extra oculto">Já existe retirada hoje. Esta será uma <strong>retirada extra</strong> e precisa de justificativa.</div>
+      <div class="campo"><label for="req-resp">Responsável pela retirada</label><input id="req-resp" required autocomplete="off"></div>
       <label>Itens</label>
       <div id="req-itens"></div>
       <button type="button" class="btn sec peq" id="btn-add-item">Adicionar item</button>
       <div id="bloco-extra" class="oculto" style="margin-top:16px">
-        <div class="campo">
-          <label for="req-just">Justificativa da retirada extra</label>
-          <select id="req-just"></select>
-        </div>
-        <div class="campo">
-          <label for="req-coment">Comentário (opcional)</label>
-          <textarea id="req-coment"></textarea>
-        </div>
+        <div class="campo"><label for="req-just">Justificativa da retirada extra</label><select id="req-just"></select></div>
+        <div class="campo"><label for="req-coment">Comentário (opcional)</label><textarea id="req-coment"></textarea></div>
       </div>
       <div class="erro" id="req-erro"></div>
     </div>
@@ -289,193 +428,297 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
 <div id="toast" class="oculto" role="status"></div>
 
 <script>
-// ================= CONFIG =================
+// ============================================================
+// CONFIG
+// ============================================================
 const SUPABASE_URL = "https://dnqcfgvwjzampdsvshxc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_zNPfW2-E01ycbvz5eBYViQ_SNc0lWad";
 const BUCKET = "requisicoes-scans";
 const TZ = "America/Sao_Paulo";
+const CAT_ORDEM = [
+  "PORÇÕES - PEIXARIA", "CAMARÃO", "FRUTOS DO MAR", "PESCADOS", "PORÇÕES - AÇOUGUE",
+  "CP ILHA - PROTEÍNAS", "CP ILHA - PETISCOS E BOLINHOS", "CP ILHA - INSUMOS PROCESSADOS", "CP ILHA - BASES DA COZINHA",
+];
+const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const NOME_LOCAL = { COZINHA: "Cozinha", PRINCIPAL: "Câmara principal" };
+const NOME_TIPO_CONT = { DIARIA: "Diária", CHECK: "Check", GERAL: "Geral" };
+const NOME_TABELA = { entradas: "Entrada", saidas: "Saída", requisicoes: "Requisição", requisicao_itens: "Item de requisição",
+  contagens: "Contagem", contagem_itens: "Item de contagem", produtos: "Produto", precos: "Preço", estoque_ideal: "Estoque ideal" };
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
 
-const estado = {
-  perfil: null,
-  produtos: [],
-  justificativas: [],
-  sugestoes: {},
-  reqScanAlvo: null,
-};
+const E = { perfil: null, produtos: [], todosProdutos: [], justificativas: [], tipos: [], sugestoes: {}, reqs: [], itensPorReq: {}, exp: {} };
 
-// ================= UTIL =================
+// ============================================================
+// UTIL
+// ============================================================
 const hojeSP = () => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
-const fmtDataHora = (iso) => new Date(iso).toLocaleString("pt-BR", {
-  timeZone: TZ, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
-});
-const fmtQtd = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const isGestor = () => estado.perfil?.papel === "GESTOR";
+const diaSP = (iso) => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(iso));
+const addDias = (ymd, n) => { const d = new Date(ymd + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const nDias = (de, ate) => Math.round((new Date(ate + "T12:00:00Z") - new Date(de + "T12:00:00Z")) / 864e5) + 1;
+const agoraInput = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+const inputParaISO = (v) => (v ? new Date(v).toISOString() : new Date().toISOString());
+const fmtDataHora = (iso) => new Date(iso).toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const fmtData = (ymd) => ymd ? ymd.split("-").reverse().join("/") : "";
+const fmtQtd = (n) => n == null ? "" : Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+const fmtR = (n) => n == null ? "sem preço" : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isGestor = () => E.perfil?.papel === "GESTOR";
+const ordCat = (c) => { const i = CAT_ORDEM.indexOf(c); return i < 0 ? 99 : i; };
+const ordenarProdutos = (lista) => [...lista].sort((a, b) => ordCat(a.categoria) - ordCat(b.categoria) || a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome));
+const clsNum = (n) => Number(n) > 0 ? "neg" : Number(n) < 0 ? "pos" : "";
 
 function toast(msg) {
-  const t = $("#toast");
-  t.textContent = msg;
-  t.classList.remove("oculto");
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.add("oculto"), 3500);
+  const t = $("#toast"); t.textContent = msg; t.classList.remove("oculto");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("oculto"), 3800);
 }
 function msgErro(e) {
   const m = e?.message || String(e);
-  if (/row-level security/i.test(m)) return "Você não tem permissão para esta ação.";
+  if (/row-level security|permission denied/i.test(m)) return "Você não tem permissão para esta ação.";
+  if (/duplicate key/i.test(m)) return "Já existe um registro com esses dados.";
   return m;
 }
+async function q(promise) {
+  const { data, error } = await promise;
+  if (error) { toast(msgErro(error)); throw error; }
+  return data;
+}
 
-// ================= AUTH =================
-$("#form-login").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  $("#login-erro").textContent = "";
-  const { error } = await sb.auth.signInWithPassword({
-    email: $("#login-email").value.trim(),
-    password: $("#login-senha").value,
+// Grade de produtos agrupada por categoria (contagem, saídas, entradas)
+function montarGrade(tbody, produtos, { permitirZero = false } = {}) {
+  let cat = null, html = "";
+  ordenarProdutos(produtos).forEach((p) => {
+    if (p.categoria !== cat) { cat = p.categoria; html += `<tr class="grupo"><td colspan="3">${esc(cat)}</td></tr>`; }
+    html += `<tr class="${p.critico ? "critico" : ""}" data-nome="${esc(p.nome.toLowerCase())}" data-cat="${esc(cat)}">
+      <td>${esc(p.nome)}</td><td>${esc(p.unidade)}</td>
+      <td class="num"><input class="qtd" type="number" inputmode="decimal" min="${permitirZero ? 0 : 0.01}" step="0.01" data-id="${p.id}" aria-label="${esc(p.nome)}"></td></tr>`;
   });
+  tbody.innerHTML = html || `<tr><td colspan="3" class="vazio">Nenhum produto.</td></tr>`;
+}
+function filtrarGrade(tbody, termo) {
+  const t = termo.trim().toLowerCase();
+  const visiveisPorCat = {};
+  tbody.querySelectorAll("tr[data-nome]").forEach((tr) => {
+    const ok = !t || tr.dataset.nome.includes(t) || tr.querySelector("input").value !== "";
+    tr.classList.toggle("oculto", !ok);
+    if (ok) visiveisPorCat[tr.dataset.cat] = true;
+  });
+  tbody.querySelectorAll("tr.grupo").forEach((tr) => tr.classList.toggle("oculto", !visiveisPorCat[tr.textContent.trim()]));
+}
+function lerGrade(tbody, permitirZero) {
+  return [...tbody.querySelectorAll("input[data-id]")]
+    .filter((i) => i.value !== "" && (permitirZero ? Number(i.value) >= 0 : Number(i.value) > 0))
+    .map((i) => ({ produto_id: i.dataset.id, quantidade: Number(i.value) }));
+}
+function contarGrade(tbody, alvo, rotulo) {
+  const n = [...tbody.querySelectorAll("input[data-id]")].filter((i) => i.value !== "").length;
+  $(alvo).textContent = n ? `${n} ${rotulo}` : "";
+}
+function opcoesProdutos(selId = "", lista = E.produtos) {
+  let cat = null, html = `<option value="">Produto</option>`;
+  ordenarProdutos(lista).forEach((p) => {
+    if (p.categoria !== cat) { if (cat !== null) html += `</optgroup>`; cat = p.categoria; html += `<optgroup label="${esc(cat)}">`; }
+    html += `<option value="${p.id}" ${p.id === selId ? "selected" : ""}>${esc(p.nome)}</option>`;
+  });
+  return html + (cat ? "</optgroup>" : "");
+}
+
+// Exportação: Excel e PDF
+function exportar(chave, fmt) {
+  const d = E.exp[chave];
+  if (!d || !d.linhas.length) return toast("Nada para exportar. Carregue os dados primeiro.");
+  const nome = `${d.arquivo}_${hojeSP()}`;
+  if (fmt === "xlsx") {
+    const dados = d.linhas.map((l) => Object.fromEntries(d.colunas.map((c) => [c.rotulo, l[c.k] ?? ""])));
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, d.titulo.slice(0, 31));
+    XLSX.writeFile(wb, nome + ".xlsx");
+  } else {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: d.colunas.length > 6 ? "landscape" : "portrait" });
+    doc.setFontSize(14); doc.text(d.titulo, 14, 16);
+    doc.setFontSize(9); doc.text(`Ilha do Caranguejo | ${d.subtitulo || ""} | Gerado em ${fmtDataHora(new Date().toISOString())}`, 14, 22);
+    doc.autoTable({
+      startY: 27, head: [d.colunas.map((c) => c.rotulo)],
+      body: d.linhas.map((l) => d.colunas.map((c) => c.fmt ? c.fmt(l[c.k]) : (l[c.k] ?? ""))),
+      styles: { fontSize: 8 }, headStyles: { fillColor: [19, 38, 47] },
+      columnStyles: Object.fromEntries(d.colunas.map((c, i) => [i, c.num ? { halign: "right" } : {}])),
+    });
+    doc.save(nome + ".pdf");
+  }
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-exp]");
+  if (b) exportar(b.dataset.exp, b.dataset.fmt);
+});
+
+// ============================================================
+// AUTH
+// ============================================================
+$("#form-login").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); $("#login-erro").textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email: $("#login-email").value.trim(), password: $("#login-senha").value });
   if (error) $("#login-erro").textContent = "E-mail ou senha incorretos.";
 });
-
 $("#btn-sair").addEventListener("click", () => sb.auth.signOut());
+// setTimeout evita chamar o Supabase dentro do callback de auth
+sb.auth.onAuthStateChange((_ev, session) => { setTimeout(() => (session ? iniciar(session.user) : mostrarLogin()), 0); });
 
-// setTimeout evita chamar o Supabase dentro do callback de auth (deadlock do supabase-js)
-sb.auth.onAuthStateChange((_ev, session) => {
-  setTimeout(() => (session ? iniciar(session.user) : mostrarLogin()), 0);
-});
+function mostrarLogin() { E.perfil = null; $("#app").classList.add("oculto"); $("#login").classList.remove("oculto"); }
 
-function mostrarLogin() {
-  estado.perfil = null;
-  $("#app").classList.add("oculto");
-  $("#login").classList.remove("oculto");
-}
-
+let iniciando = false;
 async function iniciar(user) {
-  if (estado.perfil?.id === user.id) return;
-  const { data: perfil } = await sb.from("perfis").select("*").eq("id", user.id).maybeSingle();
-  if (!perfil || !perfil.ativo) {
-    await sb.auth.signOut();
-    $("#login-erro").textContent = "Usuário sem perfil ativo. Fale com a gestão.";
-    return;
-  }
-  estado.perfil = perfil;
-  $("#usuario-nome").textContent = `${perfil.nome} (${perfil.papel === "GESTOR" ? "Gestão" : "Estoquista"})`;
-  $("#login").classList.add("oculto");
-  $("#app").classList.remove("oculto");
-  $("#filtro-dia").value = "";
-  await carregarCadastros();
-  await carregarRequisicoes();
+  if (iniciando || E.perfil?.id === user.id) return;
+  iniciando = true;
+  try {
+    const { data: perfil } = await sb.from("perfis").select("*").eq("id", user.id).maybeSingle();
+    if (!perfil || !perfil.ativo) { await sb.auth.signOut(); $("#login-erro").textContent = "Usuário sem perfil ativo. Fale com a gestão."; return; }
+    E.perfil = perfil;
+    $("#usuario-nome").textContent = `${perfil.nome} (${isGestor() ? "Gestão" : "Estoquista"})`;
+    $$("[data-gestor]").forEach((el) => el.classList.toggle("oculto", !isGestor()));
+    $("#login").classList.add("oculto"); $("#app").classList.remove("oculto");
+    await carregarCadastros();
+    prepararFormularios();
+    abrirAba("painel");
+  } finally { iniciando = false; }
 }
 
-// ================= ABAS =================
-document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
-  document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
-  const aba = b.dataset.aba;
-  $("#aba-requisicoes").classList.toggle("oculto", aba !== "requisicoes");
-  $("#aba-saldos").classList.toggle("oculto", aba !== "saldos");
-  if (aba === "saldos") carregarSaldos();
-  if (aba === "requisicoes") carregarRequisicoes();
-}));
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+const carregadores = {};
+function abrirAba(aba) {
+  $$("#nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.aba === aba));
+  $$("main > section").forEach((s) => s.classList.toggle("oculto", s.id !== "aba-" + aba));
+  carregadores[aba]?.();
+}
+$("#nav").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-aba]"); if (b) abrirAba(b.dataset.aba); });
 
-// ================= CADASTROS =================
 async function carregarCadastros() {
-  const [p, j] = await Promise.all([
-    sb.from("produtos").select("id,nome,gramatura_g,critico").eq("ativo", true).order("critico", { ascending: false }).order("nome"),
-    sb.from("justificativas_extra").select("id,nome").eq("ativo", true).order("id"),
+  const [p, j, t] = await Promise.all([
+    sb.from("produtos").select("*"),
+    sb.from("justificativas_extra").select("*").order("id"),
+    sb.from("tipos_saida").select("*").order("id"),
   ]);
-  estado.produtos = p.data || [];
-  estado.justificativas = j.data || [];
-  $("#req-just").innerHTML = `<option value="">Selecione</option>` +
-    estado.justificativas.map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  E.todosProdutos = p.data || [];
+  E.produtos = E.todosProdutos.filter((x) => x.ativo);
+  E.justificativas = j.data || [];
+  E.tipos = t.data || [];
+  $("#req-just").innerHTML = `<option value="">Selecione</option>` + E.justificativas.filter((x) => x.ativo).map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  $("#sai-tipo").innerHTML = E.tipos.filter((x) => x.ativo).map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
+  $("#ext-produto").innerHTML = opcoesProdutos($("#ext-produto").value, E.todosProdutos);
+  $("#lista-categorias").innerHTML = [...new Set(E.todosProdutos.map((x) => x.categoria))].map((c) => `<option value="${esc(c)}">`).join("");
 }
 
-// ================= REQUISIÇÕES =================
+function prepararFormularios() {
+  const hoje = hojeSP();
+  $("#cont-data").value = agoraInput(); $("#sai-data").value = agoraInput(); $("#ent-data").value = agoraInput();
+  $("#sai-filtro-dia").value = hoje; $("#ent-filtro-dia").value = hoje;
+  $("#dev-de").value = addDias(hoje, -6); $("#dev-ate").value = hoje;
+  $("#rel-de").value = addDias(hoje, -29); $("#rel-ate").value = hoje;
+  $("#pre-vig").value = hoje;
+  montarContagem(); montarSaidas();
+  montarGrade($("#ent-grid"), E.produtos);
+}
+
+// ============================================================
+// PAINEL
+// ============================================================
+carregadores.painel = carregarPainel;
+$("#painel-atualizar").addEventListener("click", carregarPainel);
+
+async function carregarPainel() {
+  const hoje = hojeSP(), de = addDias(hoje, -6);
+  const [extras, desv, pend, saldos, precos] = await Promise.all([
+    sb.from("v_requisicoes_dia").select("numero,dia,data_hora,justificativa_extra,comentario").gt("ordem_dia", 1).gte("dia", de).order("data_hora", { ascending: false }),
+    isGestor() ? sb.from("v_desvios").select("nome,dia,desvio,desvio_valor,unidade").eq("local", "COZINHA").eq("fora_tolerancia", true).gte("dia", de).order("data_hora", { ascending: false }) : Promise.resolve({ data: [] }),
+    sb.from("v_pendencias_scan").select("numero"),
+    sb.from("v_saldo_atual").select("produto_id,nome,local,ultima_contagem").eq("local", "COZINHA"),
+    sb.from("precos").select("produto_id,vigencia_inicio").lte("vigencia_inicio", hoje),
+  ]);
+  const criticos = new Set(E.produtos.filter((p) => p.critico).map((p) => p.id));
+  const semContagem = (saldos.data || []).filter((s) => criticos.has(s.produto_id) && (!s.ultima_contagem || diaSP(s.ultima_contagem) !== hoje));
+  const comPreco = new Set((precos.data || []).map((p) => p.produto_id));
+  const semPreco = E.produtos.filter((p) => !comPreco.has(p.id));
+  const d = desv.data || [];
+  const faltaR = d.reduce((s, x) => s + (Number(x.desvio_valor) > 0 ? Number(x.desvio_valor) : 0), 0);
+
+  $("#painel-ind").innerHTML = (isGestor() ? `
+    <div class="indicador"><span>Desvios fora da tolerância (7 dias)</span><strong>${d.length}</strong></div>
+    <div class="indicador"><span>Falta em R$ nesses desvios</span><strong class="${faltaR > 0 ? "neg" : ""}">${fmtR(faltaR)}</strong></div>` : "") + `
+    <div class="indicador"><span>Retiradas extras (7 dias)</span><strong>${extras.data?.length || 0}</strong></div>
+    <div class="indicador"><span>Requisições sem scan</span><strong>${pend.data?.length || 0}</strong></div>`;
+
+  const bloco = (titulo, corpo) => `<div class="bloco"><h3>${titulo}</h3>${corpo}</div>`;
+  const lista = (itens, vazio) => itens.length ? `<ul>${itens.join("")}</ul>` : `<p class="dica" style="margin:0">${vazio}</p>`;
+  $("#painel-blocos").innerHTML = [
+    isGestor() && bloco("Desvios fora da tolerância", lista(d.slice(0, 12).map((x) => `<li>${fmtData(x.dia)}: ${esc(x.nome)}, <span class="${clsNum(x.desvio)}">${fmtQtd(x.desvio)} ${esc(x.unidade)}</span> (${fmtR(x.desvio_valor)})</li>`), "Nenhum desvio fora da tolerância nos últimos 7 dias.")),
+    bloco("Retiradas extras", lista((extras.data || []).map((x) => `<li>${fmtDataHora(x.data_hora)}: ${esc(x.numero)}, ${esc(x.justificativa_extra || "")}${x.comentario ? ` (${esc(x.comentario)})` : ""}</li>`), "Nenhuma retirada extra nos últimos 7 dias.")),
+    bloco("Críticos sem contagem hoje", lista(semContagem.map((x) => `<li>${esc(x.nome)}</li>`), "Todos os críticos foram contados hoje.")),
+    isGestor() && bloco("Produtos sem preço", semPreco.length
+      ? `<p style="margin:0">${semPreco.length} produtos sem preço vigente. O desvio em R$ fica em branco para eles.${isGestor() ? ` Cadastre em Cadastros → Preços.` : ""}</p>`
+      : `<p class="dica" style="margin:0">Todos os produtos têm preço.</p>`),
+  ].filter(Boolean).join("");
+}
+
+// ============================================================
+// REQUISIÇÕES
+// ============================================================
+carregadores.requisicoes = carregarRequisicoes;
 $("#filtro-dia").addEventListener("change", carregarRequisicoes);
 
 async function carregarRequisicoes() {
   const dia = $("#filtro-dia").value;
-  let q = sb.from("v_requisicoes_dia")
-    .select("id,numero,data_hora,dia,responsavel_retirada,comentario,justificativa_extra,scan_path,ordem_dia,total_dia")
-    .order("data_hora", { ascending: false });
-  q = dia ? q.eq("dia", dia) : q.limit(60);
-  const { data: reqs, error } = await q;
-  if (error) return toast(msgErro(error));
-
+  let qr = sb.from("v_requisicoes_dia").select("id,numero,data_hora,dia,responsavel_retirada,comentario,justificativa_extra,scan_path,ordem_dia").order("data_hora", { ascending: false });
+  qr = dia ? qr.eq("dia", dia) : qr.limit(60);
+  const reqs = await q(qr);
   const ids = reqs.map((r) => r.id);
-  let itensPorReq = {};
+  const itensPorReq = {};
   if (ids.length) {
-    const { data: itens } = await sb.from("requisicao_itens")
-      .select("requisicao_id,quantidade,produtos(nome)")
-      .in("requisicao_id", ids).is("excluido_em", null);
-    (itens || []).forEach((i) => (itensPorReq[i.requisicao_id] ??= []).push(i));
+    const itens = await q(sb.from("requisicao_itens").select("requisicao_id,quantidade,produtos(nome,unidade,gramatura_g)").in("requisicao_id", ids).is("excluido_em", null));
+    itens.forEach((i) => (itensPorReq[i.requisicao_id] ??= []).push(i));
   }
-  estado.itensPorReq = itensPorReq;
-  estado.reqs = reqs;
+  E.reqs = reqs; E.itensPorReq = itensPorReq;
+  $("#lista-req").innerHTML = reqs.length ? reqs.map((r) => {
+    const itens = (itensPorReq[r.id] || []).map((i) => `<li>${fmtQtd(i.quantidade)} ${esc(i.produtos?.unidade)} ${esc(i.produtos?.nome)}</li>`).join("");
+    const selos = [
+      r.ordem_dia > 1 ? `<span class="selo extra">Extra: ${esc(r.justificativa_extra || "")}</span>` : "",
+      r.scan_path ? `<span class="selo ok">Assinada</span>` : `<span class="selo pend">Sem scan</span>`,
+    ].join(" ");
+    return `<tr><td class="numero-req">${esc(r.numero)}</td><td>${fmtDataHora(r.data_hora)}</td><td>${esc(r.responsavel_retirada)}</td>
+      <td><ul class="itens-lista">${itens}</ul></td><td>${selos}</td>
+      <td><div class="acoes">
+        <button class="btn sec peq" data-acao="imprimir" data-id="${r.id}">Imprimir</button>
+        ${r.scan_path ? `<button class="btn sec peq" data-acao="ver" data-id="${r.id}">Ver scan</button>` : ""}
+        ${(!r.scan_path || isGestor()) ? `<button class="btn sec peq" data-acao="anexar" data-id="${r.id}">${r.scan_path ? "Trocar scan" : "Anexar scan"}</button>` : ""}
+        ${isGestor() ? `<button class="btn perigo peq" data-acao="excluir" data-id="${r.id}">Excluir</button>` : ""}
+      </div></td></tr>`;
+  }).join("") : `<tr><td colspan="6" class="vazio">${dia ? "Nenhuma requisição neste dia." : "Nenhuma requisição ainda. Crie a primeira em “Nova requisição”."}</td></tr>`;
 
-  const tbody = $("#lista-req");
-  if (!reqs.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="vazio">${dia ? "Nenhuma requisição neste dia." : "Nenhuma requisição ainda. Crie a primeira em “Nova requisição”."}</td></tr>`;
-  } else {
-    tbody.innerHTML = reqs.map((r) => {
-      const itens = (itensPorReq[r.id] || [])
-        .map((i) => `<li>${fmtQtd(i.quantidade)} × ${esc(i.produtos?.nome)}</li>`).join("");
-      const selos = [
-        r.ordem_dia > 1 ? `<span class="selo extra" title="${esc(r.justificativa_extra || "")}">Extra: ${esc(r.justificativa_extra || "")}</span>` : "",
-        r.scan_path ? `<span class="selo ok">Assinada</span>` : `<span class="selo pend">Sem scan</span>`,
-      ].join(" ");
-      return `<tr>
-        <td class="numero-req">${esc(r.numero)}</td>
-        <td>${fmtDataHora(r.data_hora)}</td>
-        <td>${esc(r.responsavel_retirada)}</td>
-        <td><ul class="itens-lista">${itens}</ul></td>
-        <td>${selos}</td>
-        <td><div class="acoes">
-          <button class="btn sec peq" data-acao="imprimir" data-id="${r.id}">Imprimir</button>
-          ${r.scan_path
-            ? `<button class="btn sec peq" data-acao="ver" data-id="${r.id}">Ver scan</button>`
-            : ""}
-          ${(!r.scan_path || isGestor())
-            ? `<button class="btn sec peq" data-acao="anexar" data-id="${r.id}">${r.scan_path ? "Trocar scan" : "Anexar scan"}</button>`
-            : ""}
-          ${isGestor() ? `<button class="btn perigo peq" data-acao="excluir" data-id="${r.id}">Excluir</button>` : ""}
-        </div></td>
-      </tr>`;
-    }).join("");
-  }
-  carregarPendencias();
+  const pend = await q(sb.from("v_pendencias_scan").select("numero"));
+  $("#aviso-pendencias").innerHTML = pend.length
+    ? `<div class="aviso">${pend.length} ${pend.length === 1 ? "requisição está" : "requisições estão"} sem o scan assinado: ${pend.map((d) => esc(d.numero)).join(", ")}.</div>` : "";
 }
 
-async function carregarPendencias() {
-  const { data } = await sb.from("v_pendencias_scan").select("numero");
-  const n = data?.length || 0;
-  $("#aviso-pendencias").innerHTML = n
-    ? `<div class="aviso">${n} ${n === 1 ? "requisição está" : "requisições estão"} sem o scan assinado: ${data.map((d) => esc(d.numero)).join(", ")}.</div>`
-    : "";
-}
-
-$("#lista-req").addEventListener("click", async (ev) => {
-  const b = ev.target.closest("button[data-acao]");
-  if (!b) return;
-  const r = estado.reqs.find((x) => x.id === b.dataset.id);
-  if (!r) return;
-  if (b.dataset.acao === "imprimir") imprimir(r, estado.itensPorReq[r.id] || []);
-  if (b.dataset.acao === "anexar") { estado.reqScanAlvo = r; $("#input-scan").value = ""; $("#input-scan").click(); }
-  if (b.dataset.acao === "ver") verScan(r);
-  if (b.dataset.acao === "excluir") excluirReq(r);
+$("#lista-req").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-acao]"); if (!b) return;
+  const r = E.reqs.find((x) => x.id === b.dataset.id); if (!r) return;
+  const a = b.dataset.acao;
+  if (a === "imprimir") imprimir(r, E.itensPorReq[r.id] || []);
+  if (a === "anexar") { E.reqScanAlvo = r; $("#input-scan").value = ""; $("#input-scan").click(); }
+  if (a === "ver") verScan(r);
+  if (a === "excluir") excluirRegistro("requisicoes", r.id, `${r.numero}? Os itens voltam para o saldo da câmara principal`, carregarRequisicoes);
 });
 
-// ---------- Nova requisição ----------
 $("#btn-nova").addEventListener("click", abrirNova);
 $("#btn-cancelar").addEventListener("click", () => $("#modal-req").close());
 $("#btn-add-item").addEventListener("click", () => addItemLinha());
 
 async function abrirNova() {
-  $("#form-req").reset();
-  $("#req-erro").textContent = "";
-  $("#req-itens").innerHTML = "";
-
+  $("#form-req").reset(); $("#req-erro").textContent = ""; $("#req-itens").innerHTML = "";
   const [{ count }, sug] = await Promise.all([
     sb.from("requisicoes").select("id", { count: "exact", head: true }).eq("dia", hojeSP()).is("excluido_em", null),
     sb.from("v_sugestao_retirada").select("produto_id,sugestao,saldo_cozinha,saldo_principal,ideal_hoje"),
@@ -484,107 +727,72 @@ async function abrirNova() {
   $("#aviso-extra").classList.toggle("oculto", !extra);
   $("#bloco-extra").classList.toggle("oculto", !extra);
   $("#req-just").required = extra;
-
-  estado.sugestoes = {};
-  (sug.data || []).forEach((s) => (estado.sugestoes[s.produto_id] = s));
-  const comSugestao = (sug.data || []).filter((s) => Number(s.sugestao) > 0);
-
-  if (!extra && comSugestao.length) {
-    comSugestao.forEach((s) => addItemLinha(s.produto_id, s.sugestao));
-  } else {
-    addItemLinha();
-  }
-  $("#modal-req").showModal();
-  $("#req-resp").focus();
+  E.sugestoes = {};
+  (sug.data || []).forEach((s) => (E.sugestoes[s.produto_id] = s));
+  const comSug = (sug.data || []).filter((s) => Number(s.sugestao) > 0);
+  if (!extra && comSug.length) comSug.forEach((s) => addItemLinha(s.produto_id, s.sugestao)); else addItemLinha();
+  $("#modal-req").showModal(); $("#req-resp").focus();
 }
 
 function addItemLinha(produtoId = "", qtd = "") {
   const div = document.createElement("div");
-  div.innerHTML = `
-    <div class="item-linha">
-      <select aria-label="Produto" required>
-        <option value="">Produto</option>
-        ${estado.produtos.map((p) => `<option value="${p.id}" ${p.id === produtoId ? "selected" : ""}>${esc(p.nome)}${p.gramatura_g ? ` (${fmtQtd(p.gramatura_g)} g)` : ""}</option>`).join("")}
-      </select>
-      <input type="number" aria-label="Quantidade em porções" min="0.01" step="0.01" placeholder="Porções" value="${qtd}" required>
-      <button type="button" aria-label="Remover item">✕</button>
-    </div>
-    <div class="sugestao"></div>`;
+  div.innerHTML = `<div class="item-linha">
+      <select aria-label="Produto" required>${opcoesProdutos(produtoId)}</select>
+      <input type="number" inputmode="decimal" aria-label="Quantidade" min="0.01" step="0.01" placeholder="Qtd" value="${qtd}" required>
+      <button type="button" aria-label="Remover item">✕</button></div><div class="sugestao"></div>`;
   const sel = div.querySelector("select");
-  const atualizarSug = () => {
-    const s = estado.sugestoes[sel.value];
-    div.querySelector(".sugestao").textContent = s
-      ? `Ideal hoje ${fmtQtd(s.ideal_hoje)} | cozinha ${fmtQtd(s.saldo_cozinha)} | principal ${fmtQtd(s.saldo_principal)} | sugestão ${fmtQtd(s.sugestao)}`
-      : "";
+  const atual = () => {
+    const s = E.sugestoes[sel.value]; const p = E.produtos.find((x) => x.id === sel.value);
+    div.querySelector(".sugestao").textContent = s && !isGestor()
+      ? `Sugestão ${fmtQtd(s.sugestao)} ${p?.unidade || ""}`
+      : s ? `Ideal hoje ${fmtQtd(s.ideal_hoje)} | cozinha ${fmtQtd(s.saldo_cozinha)} | principal ${fmtQtd(s.saldo_principal)} | sugestão ${fmtQtd(s.sugestao)} ${p?.unidade || ""}`
+      : p ? `Unidade: ${p.unidade}` : "";
   };
-  sel.addEventListener("change", atualizarSug);
+  sel.addEventListener("change", atual);
   div.querySelector("button").addEventListener("click", () => div.remove());
-  $("#req-itens").appendChild(div);
-  atualizarSug();
+  $("#req-itens").appendChild(div); atual();
 }
 
 $("#form-req").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  $("#req-erro").textContent = "";
-  const linhas = [...$("#req-itens").querySelectorAll(".item-linha")];
-  const itens = linhas.map((l) => ({
-    produto_id: l.querySelector("select").value,
-    quantidade: Number(l.querySelector("input").value),
-  })).filter((i) => i.produto_id && i.quantidade > 0);
-
+  ev.preventDefault(); $("#req-erro").textContent = "";
+  const itens = [...$("#req-itens").querySelectorAll(".item-linha")]
+    .map((l) => ({ produto_id: l.querySelector("select").value, quantidade: Number(l.querySelector("input").value) }))
+    .filter((i) => i.produto_id && i.quantidade > 0);
   const ids = itens.map((i) => i.produto_id);
   if (new Set(ids).size !== ids.length) return ($("#req-erro").textContent = "Há produtos repetidos. Some as quantidades numa linha só.");
   if (!itens.length) return ($("#req-erro").textContent = "Inclua ao menos um item.");
-
-  const btn = $("#btn-salvar-req");
-  btn.disabled = true;
+  const btn = $("#btn-salvar-req"); btn.disabled = true;
   const { data, error } = await sb.rpc("criar_requisicao", {
-    p_responsavel: $("#req-resp").value,
-    p_itens: itens,
+    p_responsavel: $("#req-resp").value, p_itens: itens,
     p_justificativa: $("#req-just").value ? Number($("#req-just").value) : null,
     p_comentario: $("#req-coment").value || null,
   });
   btn.disabled = false;
   if (error) return ($("#req-erro").textContent = msgErro(error));
-
   $("#modal-req").close();
   toast(`Requisição ${data.numero} criada.`);
-  const itensImp = itens.map((i) => ({
-    quantidade: i.quantidade,
-    produtos: estado.produtos.find((p) => p.id === i.produto_id),
-  }));
-  const just = estado.justificativas.find((j) => j.id === data.justificativa_extra_id);
-  imprimir({ ...data, justificativa_extra: just?.nome }, itensImp);
+  const just = E.justificativas.find((j) => j.id === data.justificativa_extra_id);
+  imprimir({ ...data, justificativa_extra: just?.nome }, itens.map((i) => ({ quantidade: i.quantidade, produtos: E.produtos.find((p) => p.id === i.produto_id) })));
   carregarRequisicoes();
 });
 
-// ---------- Impressão ----------
 function imprimir(r, itens) {
   $("#impressao").innerHTML = `
-    <div class="imp-cab">
-      <div><h1>Requisição de retirada</h1><div>Câmara principal → câmara da cozinha<br>Ilha do Caranguejo</div></div>
-      <div class="imp-num">${esc(r.numero)}</div>
-    </div>
+    <div class="imp-cab"><div><h1>Requisição de retirada</h1><div>Câmara principal → câmara da cozinha<br>Ilha do Caranguejo</div></div>
+      <div class="imp-num">${esc(r.numero)}</div></div>
     <div class="imp-dados">
       <div><strong>Data e hora:</strong> ${fmtDataHora(r.data_hora)}</div>
       <div><strong>Responsável pela retirada:</strong> ${esc(r.responsavel_retirada)}</div>
       ${r.justificativa_extra ? `<div><strong>Retirada extra:</strong> ${esc(r.justificativa_extra)}${r.comentario ? ` (${esc(r.comentario)})` : ""}</div>` : ""}
     </div>
-    <table>
-      <thead><tr><th>Produto</th><th class="num">Porções</th></tr></thead>
-      <tbody>${itens.map((i) => `<tr><td>${esc(i.produtos?.nome)}${i.produtos?.gramatura_g ? ` (${fmtQtd(i.produtos.gramatura_g)} g)` : ""}</td><td class="num">${fmtQtd(i.quantidade)}</td></tr>`).join("")}</tbody>
-    </table>
-    <div class="assinaturas">
-      <div>GESTÃO<small>Nome:</small></div>
-      <div>RESPONSÁVEL PELA RETIRADA<small>Nome:</small></div>
-    </div>`;
+    <table><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Quantidade</th></tr></thead>
+      <tbody>${itens.map((i) => `<tr><td>${esc(i.produtos?.nome)}</td><td>${esc(i.produtos?.unidade)}</td><td class="num">${fmtQtd(i.quantidade)}</td></tr>`).join("")}</tbody></table>
+    <div class="assinaturas"><div>GESTÃO<small>Nome:</small></div><div>RESPONSÁVEL PELA RETIRADA<small>Nome:</small></div></div>`;
   setTimeout(() => window.print(), 50);
 }
 
-// ---------- Scan ----------
 $("#input-scan").addEventListener("change", async (ev) => {
-  const f = ev.target.files[0];
-  const r = estado.reqScanAlvo;
+  const f = ev.target.files[0], r = E.reqScanAlvo;
   if (!f || !r) return;
   if (f.size > 10 * 1024 * 1024) return toast("Arquivo acima de 10 MB. Reduza a resolução do scan.");
   const ext = (f.name.split(".").pop() || "pdf").toLowerCase();
@@ -594,63 +802,523 @@ $("#input-scan").addEventListener("change", async (ev) => {
   if (up.error) return toast(msgErro(up.error));
   const { error } = await sb.rpc("anexar_scan", { p_requisicao: r.id, p_path: path });
   if (error) return toast(msgErro(error));
-  toast(`Scan anexado à ${r.numero}.`);
-  carregarRequisicoes();
+  toast(`Scan anexado à ${r.numero}.`); carregarRequisicoes();
 });
-
 async function verScan(r) {
   const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(r.scan_path, 300);
   if (error) return toast(msgErro(error));
   window.open(data.signedUrl, "_blank", "noopener");
 }
 
-// ---------- Exclusão (gestão) ----------
-async function excluirReq(r) {
-  const motivo = prompt(`Excluir ${r.numero}? Os itens voltam para o saldo da câmara principal.\n\nMotivo da exclusão:`);
+// Exclusão lógica genérica (gestão)
+async function excluirRegistro(tabela, id, descricao, depois) {
+  const motivo = prompt(`Excluir ${descricao}?\n\nMotivo da exclusão:`);
   if (motivo === null) return;
   if (!motivo.trim()) return toast("Informe o motivo para excluir.");
-  const { error } = await sb.from("requisicoes").update({
-    excluido_em: new Date().toISOString(),
-    excluido_por: estado.perfil.id,
-    motivo_exclusao: motivo.trim(),
-  }).eq("id", r.id);
+  const { error } = await sb.from(tabela).update({ excluido_em: new Date().toISOString(), excluido_por: E.perfil.id, motivo_exclusao: motivo.trim() }).eq("id", id);
   if (error) return toast(msgErro(error));
-  toast(`${r.numero} excluída.`);
-  carregarRequisicoes();
+  toast("Excluído. Saldos e desvios recalculados."); depois?.();
 }
 
-// ================= SALDOS =================
+// ============================================================
+// CONTAGEM
+// ============================================================
+carregadores.contagem = () => { $("#cont-data").value = agoraInput(); carregarContagens(); };
+function montarContagem() {
+  const tipo = $("#cont-tipo").value;
+  if (tipo === "DIARIA" || tipo === "CHECK") $("#cont-local").value = "COZINHA";
+  $("#cont-local").disabled = tipo !== "GERAL";
+  const lista = tipo === "DIARIA" ? E.produtos.filter((p) => p.critico) : E.produtos;
+  montarGrade($("#cont-grid"), lista, { permitirZero: true });
+  $("#cont-busca").value = ""; $("#cont-resumo").textContent = ""; $("#cont-resultado").innerHTML = "";
+}
+$("#cont-tipo").addEventListener("change", montarContagem);
+$("#cont-busca").addEventListener("input", (e) => filtrarGrade($("#cont-grid"), e.target.value));
+$("#cont-grid").addEventListener("input", () => contarGrade($("#cont-grid"), "#cont-resumo", "itens preenchidos"));
+
+$("#cont-salvar").addEventListener("click", async () => {
+  const itens = lerGrade($("#cont-grid"), true);
+  if (!itens.length) return toast("Preencha ao menos um item.");
+  const local = $("#cont-local").value, tipo = $("#cont-tipo").value;
+  if (!confirm(`Salvar contagem ${NOME_TIPO_CONT[tipo].toLowerCase()} da ${NOME_LOCAL[local].toLowerCase()} com ${itens.length} itens?`)) return;
+  const btn = $("#cont-salvar"); btn.disabled = true;
+  const { data, error } = await sb.rpc("registrar_contagem", {
+    p_local: local, p_tipo: tipo, p_itens: itens, p_data_hora: inputParaISO($("#cont-data").value), p_observacao: $("#cont-obs").value || null,
+  });
+  btn.disabled = false;
+  if (error) return toast(msgErro(error));
+  toast("Contagem salva.");
+  montarContagem(); $("#cont-obs").value = ""; $("#cont-data").value = agoraInput();
+  if (isGestor()) {
+    const dv = await q(sb.from("v_desvios").select("nome,unidade,esperado,contado,desvio,desvio_valor,fora_tolerancia").eq("contagem_id", data.id).order("desvio", { ascending: false }));
+    $("#cont-resultado").innerHTML = dv.length ? `<h3 style="margin-top:20px">Resultado desta contagem</h3>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Desvio</th><th class="num">R$</th><th></th></tr></thead><tbody>
+      ${dv.map((x) => `<tr><td>${esc(x.nome)}</td><td class="num">${fmtQtd(x.esperado)}</td><td class="num">${fmtQtd(x.contado)}</td><td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}</td><td class="num">${fmtR(x.desvio_valor)}</td><td>${x.fora_tolerancia ? `<span class="selo ruim">Fora da tolerância</span>` : `<span class="selo ok">OK</span>`}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="dica">Primeira contagem destes itens neste local: ela vira a base para os próximos desvios.</p>`;
+  }
+  carregarContagens();
+});
+
+async function carregarContagens() {
+  const lista = await q(sb.from("contagens").select("id,local,tipo,data_hora,responsavel,perfis!contagens_responsavel_fkey(nome),contagem_itens(count)").is("excluido_em", null).order("data_hora", { ascending: false }).limit(15));
+  $("#cont-lista").innerHTML = lista.length ? lista.map((c) => `<tr><td>${fmtDataHora(c.data_hora)}</td><td>${NOME_LOCAL[c.local]}</td><td>${NOME_TIPO_CONT[c.tipo]}</td>
+    <td class="num">${c.contagem_itens?.[0]?.count ?? ""}</td><td>${esc(c.perfis?.nome)}</td>
+    <td>${isGestor() ? `<button class="btn perigo peq" data-excluir-cont="${c.id}">Excluir</button>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="vazio">Nenhuma contagem ainda.</td></tr>`;
+}
+$("#cont-lista").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-excluir-cont]");
+  if (b) excluirRegistro("contagens", b.dataset.excluirCont, "a contagem inteira", carregarContagens);
+});
+
+// ============================================================
+// SAÍDAS
+// ============================================================
+carregadores.saidas = () => { $("#sai-data").value = agoraInput(); carregarSaidas(); };
+function montarSaidas() {
+  const lista = $("#sai-criticos").checked ? E.produtos.filter((p) => p.critico) : E.produtos;
+  montarGrade($("#sai-grid"), lista); $("#sai-resumo").textContent = "";
+}
+$("#sai-criticos").addEventListener("change", montarSaidas);
+$("#sai-busca").addEventListener("input", (e) => filtrarGrade($("#sai-grid"), e.target.value));
+$("#sai-grid").addEventListener("input", () => contarGrade($("#sai-grid"), "#sai-resumo", "produtos preenchidos"));
+$("#sai-filtro-dia").addEventListener("change", carregarSaidas);
+
+$("#sai-salvar").addEventListener("click", async () => {
+  const itens = lerGrade($("#sai-grid"), false);
+  if (!itens.length) return toast("Preencha ao menos uma quantidade.");
+  const tipo = E.tipos.find((t) => t.id === Number($("#sai-tipo").value));
+  if (!confirm(`Lançar ${itens.length} saídas do tipo "${tipo?.nome}"?`)) return;
+  const dh = inputParaISO($("#sai-data").value), obs = $("#sai-obs").value.trim() || null;
+  const btn = $("#sai-salvar"); btn.disabled = true;
+  const { error } = await sb.from("saidas").insert(itens.map((i) => ({ ...i, tipo_saida_id: tipo.id, data_hora: dh, observacao: obs })));
+  btn.disabled = false;
+  if (error) return toast(msgErro(error));
+  toast(`${itens.length} saídas lançadas.`);
+  montarSaidas(); $("#sai-obs").value = ""; $("#sai-filtro-dia").value = diaSP(dh); carregarSaidas();
+});
+
+async function carregarSaidas() {
+  const dia = $("#sai-filtro-dia").value || hojeSP();
+  const lista = await q(sb.from("v_saidas").select("*").eq("dia", dia).order("data_hora", { ascending: false }));
+  $("#sai-lista").innerHTML = lista.length ? lista.map((s) => `<tr><td>${fmtDataHora(s.data_hora)}</td><td>${esc(s.nome)}</td><td>${esc(s.tipo)}</td>
+    <td class="num">${fmtQtd(s.quantidade)} ${esc(s.unidade)}</td><td>${esc(s.observacao)}</td>
+    <td>${isGestor() ? `<div class="acoes"><button class="btn sec peq" data-editar="${s.id}" data-qtd="${s.quantidade}">Editar</button><button class="btn perigo peq" data-excluir="${s.id}">Excluir</button></div>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="vazio">Nenhuma saída neste dia.</td></tr>`;
+}
+$("#sai-lista").addEventListener("click", (ev) => {
+  const e = ev.target.closest("[data-editar]"), x = ev.target.closest("[data-excluir]");
+  if (e) editarQuantidade("saidas", e.dataset.editar, e.dataset.qtd, carregarSaidas);
+  if (x) excluirRegistro("saidas", x.dataset.excluir, "esta saída", carregarSaidas);
+});
+
+async function editarQuantidade(tabela, id, atual, depois, permitirZero = false) {
+  const v = prompt("Nova quantidade:", fmtQtd(atual).replace(/\./g, ""));
+  if (v === null) return;
+  const n = Number(String(v).replace(",", "."));
+  if (!Number.isFinite(n) || (permitirZero ? n < 0 : n <= 0)) return toast("Quantidade inválida.");
+  const { error } = await sb.from(tabela).update({ quantidade: n }).eq("id", id);
+  if (error) return toast(msgErro(error));
+  toast("Alterado. Saldos e desvios recalculados."); depois?.();
+}
+
+// ============================================================
+// ENTRADAS
+// ============================================================
+carregadores.entradas = () => { $("#ent-data").value = agoraInput(); carregarEntradas(); };
+$("#ent-busca").addEventListener("input", (e) => filtrarGrade($("#ent-grid"), e.target.value));
+$("#ent-grid").addEventListener("input", () => contarGrade($("#ent-grid"), "#ent-resumo", "produtos preenchidos"));
+$("#ent-filtro-dia").addEventListener("change", carregarEntradas);
+
+$("#ent-salvar").addEventListener("click", async () => {
+  const itens = lerGrade($("#ent-grid"), false);
+  if (!itens.length) return toast("Preencha ao menos uma quantidade.");
+  if (!confirm(`Lançar entrada de ${itens.length} produtos na câmara principal?`)) return;
+  const dh = inputParaISO($("#ent-data").value), obs = $("#ent-obs").value.trim() || null;
+  const btn = $("#ent-salvar"); btn.disabled = true;
+  const { error } = await sb.from("entradas").insert(itens.map((i) => ({ ...i, data_hora: dh, observacao: obs })));
+  btn.disabled = false;
+  if (error) return toast(msgErro(error));
+  toast(`Entrada de ${itens.length} produtos lançada.`);
+  montarGrade($("#ent-grid"), E.produtos); $("#ent-resumo").textContent = ""; $("#ent-obs").value = "";
+  $("#ent-filtro-dia").value = diaSP(dh); carregarEntradas();
+});
+
+async function carregarEntradas() {
+  const dia = $("#ent-filtro-dia").value || hojeSP();
+  const ini = new Date(dia + "T00:00:00-03:00").toISOString(), fim = new Date(addDias(dia, 1) + "T00:00:00-03:00").toISOString();
+  const lista = await q(sb.from("entradas").select("id,quantidade,data_hora,observacao,produtos(nome,unidade)").is("excluido_em", null).gte("data_hora", ini).lt("data_hora", fim).order("data_hora", { ascending: false }));
+  $("#ent-lista").innerHTML = lista.length ? lista.map((s) => `<tr><td>${fmtDataHora(s.data_hora)}</td><td>${esc(s.produtos?.nome)}</td>
+    <td class="num">${fmtQtd(s.quantidade)} ${esc(s.produtos?.unidade)}</td><td>${esc(s.observacao)}</td>
+    <td>${isGestor() ? `<div class="acoes"><button class="btn sec peq" data-editar="${s.id}" data-qtd="${s.quantidade}">Editar</button><button class="btn perigo peq" data-excluir="${s.id}">Excluir</button></div>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="vazio">Nenhuma entrada neste dia.</td></tr>`;
+}
+$("#ent-lista").addEventListener("click", (ev) => {
+  const e = ev.target.closest("[data-editar]"), x = ev.target.closest("[data-excluir]");
+  if (e) editarQuantidade("entradas", e.dataset.editar, e.dataset.qtd, carregarEntradas);
+  if (x) excluirRegistro("entradas", x.dataset.excluir, "esta entrada", carregarEntradas);
+});
+
+// ============================================================
+// DESVIOS
+// ============================================================
+carregadores.desvios = carregarDesvios;
+["#dev-de", "#dev-ate", "#dev-local", "#dev-criticos", "#dev-fora"].forEach((s) => $(s).addEventListener("change", carregarDesvios));
+
+async function carregarDesvios() {
+  const de = $("#dev-de").value, ate = $("#dev-ate").value, local = $("#dev-local").value;
+  let qr = sb.from("v_desvios").select("*").gte("dia", de).lte("dia", ate).order("data_hora", { ascending: false });
+  if (local) qr = qr.eq("local", local);
+  if ($("#dev-criticos").checked) qr = qr.eq("critico", true);
+  if ($("#dev-fora").checked) qr = qr.eq("fora_tolerancia", true);
+  const d = await q(qr);
+
+  const falta = d.reduce((s, x) => s + Math.max(Number(x.desvio_valor) || 0, 0), 0);
+  const sobra = d.reduce((s, x) => s + Math.min(Number(x.desvio_valor) || 0, 0), 0);
+  const fora = d.filter((x) => x.fora_tolerancia).length;
+  $("#dev-ind").innerHTML = `
+    <div class="indicador"><span>Falta acumulada</span><strong class="${falta > 0 ? "neg" : ""}">${fmtR(falta)}</strong></div>
+    <div class="indicador"><span>Sobra acumulada</span><strong>${fmtR(-sobra)}</strong></div>
+    <div class="indicador"><span>Saldo líquido do desvio</span><strong class="${falta + sobra > 0 ? "neg" : ""}">${fmtR(falta + sobra)}</strong></div>
+    <div class="indicador"><span>Fora da tolerância</span><strong>${fora} de ${d.length}</strong></div>`;
+
+  const rank = {};
+  d.forEach((x) => {
+    const r = (rank[x.produto_id] ??= { nome: x.nome, unidade: x.unidade, n: 0, qtd: 0, valor: 0 });
+    r.n++; r.qtd += Number(x.desvio); r.valor += Number(x.desvio_valor) || 0;
+  });
+  const ranking = Object.values(rank).sort((a, b) => b.valor - a.valor || b.qtd - a.qtd);
+  $("#dev-rank").innerHTML = ranking.length ? ranking.map((r) => `<tr><td>${esc(r.nome)}</td><td class="num">${r.n}</td>
+    <td class="num ${clsNum(r.qtd)}">${fmtQtd(r.qtd)} ${esc(r.unidade)}</td><td class="num ${clsNum(r.valor)}">${fmtR(r.valor)}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="vazio">Nenhum desvio no período. Desvios aparecem a partir da segunda contagem de cada produto.</td></tr>`;
+
+  $("#dev-lista").innerHTML = d.length ? d.map((x) => `<tr>
+    <td>${fmtDataHora(x.data_hora)}<br><small class="dica">desde ${fmtDataHora(x.data_anterior)}</small></td>
+    <td>${esc(x.nome)}</td><td>${NOME_LOCAL[x.local]}</td>
+    <td class="num">${fmtQtd(x.qtd_anterior)}</td><td class="num">${fmtQtd(x.entradas_periodo)}</td><td class="num">${fmtQtd(x.saidas_periodo)}</td>
+    <td class="num">${fmtQtd(x.esperado)}</td><td class="num">${fmtQtd(x.contado)}</td>
+    <td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}${x.fora_tolerancia ? ` <span class="selo ruim">!</span>` : ""}</td>
+    <td class="num">${fmtR(x.desvio_valor)}</td>
+    <td>${esc(x.justificativa)}${isGestor() && Number(x.desvio) !== 0 ? ` <button class="btn sec peq" data-just="${x.item_id}" data-atual="${esc(x.justificativa)}">${x.justificativa ? "Editar" : "Justificar"}</button>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="11" class="vazio">Nenhum desvio no período.</td></tr>`;
+
+  E.exp.desvios = {
+    titulo: "Desvios", arquivo: "desvios", subtitulo: `${fmtData(de)} a ${fmtData(ate)} | ${local ? NOME_LOCAL[local] : "Ambos os locais"}`,
+    colunas: [
+      { k: "data", rotulo: "Contagem" }, { k: "nome", rotulo: "Produto" }, { k: "local", rotulo: "Local" },
+      { k: "qtd_anterior", rotulo: "Anterior", num: true }, { k: "entradas_periodo", rotulo: "Entrou", num: true }, { k: "saidas_periodo", rotulo: "Saiu", num: true },
+      { k: "esperado", rotulo: "Esperado", num: true }, { k: "contado", rotulo: "Contado", num: true }, { k: "desvio", rotulo: "Desvio", num: true },
+      { k: "desvio_valor", rotulo: "Desvio R$", num: true, fmt: (v) => v === "" || v == null ? "" : fmtR(v) }, { k: "justificativa", rotulo: "Justificativa" },
+    ],
+    linhas: d.map((x) => ({ ...x, data: fmtDataHora(x.data_hora), local: NOME_LOCAL[x.local],
+      qtd_anterior: Number(x.qtd_anterior), entradas_periodo: Number(x.entradas_periodo), saidas_periodo: Number(x.saidas_periodo),
+      esperado: Number(x.esperado), contado: Number(x.contado), desvio: Number(x.desvio), desvio_valor: x.desvio_valor == null ? "" : Number(x.desvio_valor) })),
+  };
+}
+$("#dev-lista").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-just]"); if (!b) return;
+  const v = prompt("Justificativa do desvio:", b.dataset.atual || "");
+  if (v === null) return;
+  const { error } = await sb.from("contagem_itens").update({ justificativa: v.trim() || null }).eq("id", b.dataset.just);
+  if (error) return toast(msgErro(error));
+  toast("Justificativa salva."); carregarDesvios();
+});
+
+// ============================================================
+// SALDOS
+// ============================================================
+carregadores.saldos = carregarSaldos;
 $("#so-criticos").addEventListener("change", carregarSaldos);
+$("#sal-busca").addEventListener("input", () => renderSaldos());
 
 async function carregarSaldos() {
-  const { data, error } = await sb.from("v_saldo_atual").select("produto_id,nome,local,saldo,ultima_contagem");
-  if (error) return toast(msgErro(error));
-  const critico = Object.fromEntries(estado.produtos.map((p) => [p.id, p.critico]));
-  const porProduto = {};
-  data.forEach((s) => {
-    porProduto[s.produto_id] ??= { nome: s.nome, critico: critico[s.produto_id] };
-    porProduto[s.produto_id][s.local] = s;
-  });
-  let lista = Object.values(porProduto);
-  if ($("#so-criticos").checked) lista = lista.filter((p) => p.critico);
-  lista.sort((a, b) => (b.critico - a.critico) || a.nome.localeCompare(b.nome));
-
-  const linha = (rotulo, s) => `
-    <div class="saldo-linha"><span>${rotulo}</span>
-      <span class="saldo-valor ${Number(s?.saldo) < 0 ? "neg" : ""}">${fmtQtd(s?.saldo ?? 0)}</span>
-    </div>`;
+  E.saldos = await q(sb.from("v_saldo_atual").select("produto_id,nome,local,saldo,ultima_contagem"));
+  renderSaldos();
+}
+function renderSaldos() {
+  const porProd = {};
+  (E.saldos || []).forEach((s) => { (porProd[s.produto_id] ??= {})[s.local] = s; });
+  const t = $("#sal-busca").value.trim().toLowerCase();
+  let prods = E.produtos.filter((p) => porProd[p.id]);
+  if ($("#so-criticos").checked) prods = prods.filter((p) => p.critico);
+  if (t) prods = prods.filter((p) => p.nome.toLowerCase().includes(t));
   const ult = (s) => s?.ultima_contagem ? fmtDataHora(s.ultima_contagem) : "nunca";
-
-  $("#lista-saldos").innerHTML = lista.length ? lista.map((p) => `
-    <article class="saldo-card ${p.critico ? "critico" : ""}">
-      <h3>${esc(p.nome)}</h3>
-      ${linha("Câmara principal", p.PRINCIPAL)}
-      ${linha("Cozinha", p.COZINHA)}
-      <div class="saldo-rodape">Última contagem: principal ${ult(p.PRINCIPAL)}, cozinha ${ult(p.COZINHA)}</div>
-    </article>`).join("")
-    : `<div class="vazio">Nenhum produto cadastrado.</div>`;
+  const linha = (rot, s, un) => `<div class="saldo-linha"><span>${rot}</span><span class="saldo-valor ${Number(s?.saldo) < 0 ? "neg" : ""}">${fmtQtd(s?.saldo ?? 0)}<small style="font-size:14px;font-weight:500"> ${esc(un)}</small></span></div>`;
+  let html = "", cat = null;
+  ordenarProdutos(prods).forEach((p) => {
+    if (p.categoria !== cat) { if (cat !== null) html += `</div>`; cat = p.categoria; html += `<div class="cat-titulo">${esc(cat)}</div><div class="saldos">`; }
+    const s = porProd[p.id];
+    html += `<article class="saldo-card ${p.critico ? "critico" : ""}"><h4>${esc(p.nome)}</h4>
+      ${linha("Câmara principal", s.PRINCIPAL, p.unidade)}${linha("Cozinha", s.COZINHA, p.unidade)}
+      <div class="saldo-rodape">Última contagem: principal ${ult(s.PRINCIPAL)}; cozinha ${ult(s.COZINHA)}</div></article>`;
+  });
+  $("#lista-saldos").innerHTML = html ? html + "</div>" : `<div class="vazio">Nenhum produto encontrado.</div>`;
+  E.exp.saldos = {
+    titulo: "Saldos atuais", arquivo: "saldos", subtitulo: fmtDataHora(new Date().toISOString()),
+    colunas: [{ k: "categoria", rotulo: "Categoria" }, { k: "nome", rotulo: "Produto" }, { k: "unidade", rotulo: "Un." },
+      { k: "principal", rotulo: "Câmara principal", num: true }, { k: "cozinha", rotulo: "Cozinha", num: true }],
+    linhas: ordenarProdutos(prods).map((p) => ({ categoria: p.categoria, nome: p.nome, unidade: p.unidade,
+      principal: Number(porProd[p.id].PRINCIPAL?.saldo ?? 0), cozinha: Number(porProd[p.id].COZINHA?.saldo ?? 0) })),
+  };
 }
 
+// ============================================================
+// MOVIMENTAÇÃO (EXTRATO)
+// ============================================================
+carregadores.extrato = carregarExtrato;
+$("#ext-produto").addEventListener("change", carregarExtrato);
+$("#ext-local").addEventListener("change", carregarExtrato);
+
+async function carregarExtrato() {
+  const pid = $("#ext-produto").value, local = $("#ext-local").value;
+  if (!pid) { $("#ext-lista").innerHTML = `<tr><td colspan="7" class="vazio">Escolha um produto.</td></tr>`; E.exp.extrato = null; return; }
+  const rows = await q(sb.from("v_extrato").select("*").eq("produto_id", pid).eq("local", local).order("data_hora", { ascending: true }));
+  let saldo = 0;
+  rows.forEach((r) => { if (r.operacao === "CONTAGEM") saldo = Number(r.contado); else saldo += Number(r.delta); r.saldo = saldo; });
+  const p = E.todosProdutos.find((x) => x.id === pid);
+  const nomeOp = { ENTRADA: "Entrada", TRANSFERENCIA: local === "COZINHA" ? "Requisição (entrou)" : "Requisição (saiu)", SAIDA: "Saída", CONTAGEM: "Contagem" };
+  const exib = [...rows].reverse();
+  $("#ext-lista").innerHTML = exib.length ? exib.map((r) => {
+    const detalhe = r.operacao === "CONTAGEM" ? NOME_TIPO_CONT[r.detalhe] || r.detalhe : r.detalhe;
+    return `<tr><td>${fmtDataHora(r.data_hora)}</td><td>${nomeOp[r.operacao]}</td><td>${esc(detalhe)}</td>
+      <td class="num ${r.delta < 0 ? "neg" : ""}">${r.delta == null ? "" : (r.delta > 0 ? "+" : "") + fmtQtd(r.delta)}</td>
+      <td class="num">${fmtQtd(r.contado)}</td><td class="num"><strong>${fmtQtd(r.saldo)}</strong></td>
+      ${isGestor() ? `<td><div class="acoes"><button class="btn sec peq" data-ext-edit="${r.registro_id}" data-tab="${r.tabela}" data-qtd="${r.delta == null ? r.contado : Math.abs(r.delta)}">Editar</button>
+        <button class="btn perigo peq" data-ext-del="${r.registro_id}" data-tab="${r.tabela}">Excluir</button></div></td>` : ""}</tr>`;
+  }).join("") : `<tr><td colspan="7" class="vazio">Nenhuma movimentação deste produto neste local.</td></tr>`;
+  E.exp.extrato = {
+    titulo: `Movimentação: ${p?.nome || ""}`, arquivo: "movimentacao", subtitulo: NOME_LOCAL[local],
+    colunas: [{ k: "data", rotulo: "Data e hora" }, { k: "op", rotulo: "Operação" }, { k: "detalhe", rotulo: "Detalhe" },
+      { k: "delta", rotulo: "Movimento", num: true }, { k: "contado", rotulo: "Contado", num: true }, { k: "saldo", rotulo: "Saldo", num: true }],
+    linhas: rows.map((r) => ({ data: fmtDataHora(r.data_hora), op: nomeOp[r.operacao], detalhe: r.detalhe,
+      delta: r.delta == null ? "" : Number(r.delta), contado: r.contado == null ? "" : Number(r.contado), saldo: r.saldo })),
+  };
+}
+$("#ext-lista").addEventListener("click", (ev) => {
+  const e = ev.target.closest("[data-ext-edit]"), x = ev.target.closest("[data-ext-del]");
+  if (e) editarQuantidade(e.dataset.tab, e.dataset.extEdit, e.dataset.qtd, carregarExtrato, e.dataset.tab === "contagem_itens");
+  if (x) excluirRegistro(x.dataset.tab, x.dataset.extDel, "este lançamento", carregarExtrato);
+});
+
+// ============================================================
+// RELATÓRIOS
+// ============================================================
+$("#rel-gerar").addEventListener("click", gerarRelatorio);
+
+async function gerarRelatorio() {
+  const tipo = $("#rel-tipo").value, de = $("#rel-de").value, ate = $("#rel-ate").value;
+  if (!de || !ate || de > ate) return toast("Período inválido.");
+  const dias = nDias(de, ate), sub = `${fmtData(de)} a ${fmtData(ate)}`;
+  let colunas, linhas, ind = "";
+
+  if (tipo === "retiradas") {
+    const d = await q(sb.from("v_retiradas_diarias").select("*").gte("dia", de).lte("dia", ate));
+    const ag = {};
+    d.forEach((x) => { const a = (ag[x.produto_id] ??= { nome: x.nome, total: 0, dias: 0, reqs: 0 }); a.total += Number(x.quantidade); a.dias++; a.reqs += x.n_requisicoes; });
+    linhas = Object.entries(ag).map(([id, a]) => {
+      const p = E.todosProdutos.find((x) => x.id === id);
+      return { ...a, categoria: p?.categoria, unidade: p?.unidade, media: +(a.total / dias).toFixed(2), media_dia_ret: +(a.total / a.dias).toFixed(2) };
+    }).sort((a, b) => b.total - a.total).map((l, i) => ({ pos: i + 1, ...l }));
+    colunas = [{ k: "pos", rotulo: "#", num: true }, { k: "nome", rotulo: "Produto" }, { k: "categoria", rotulo: "Categoria" }, { k: "unidade", rotulo: "Un." },
+      { k: "total", rotulo: "Total retirado", num: true }, { k: "media", rotulo: `Média/dia (${dias} dias)`, num: true },
+      { k: "dias", rotulo: "Dias com retirada", num: true }, { k: "media_dia_ret", rotulo: "Média nos dias com retirada", num: true }];
+    const top = linhas[0];
+    ind = `<div class="indicador"><span>Produtos retirados</span><strong>${linhas.length}</strong></div>
+      <div class="indicador"><span>Mais retirado</span><strong style="font-size:20px">${top ? esc(top.nome) : "-"}</strong></div>`;
+  }
+
+  if (tipo === "retiradas-det") {
+    const reqs = await q(sb.from("v_requisicoes_dia").select("id,numero,data_hora,responsavel_retirada,justificativa_extra,ordem_dia").gte("dia", de).lte("dia", ate).order("data_hora"));
+    const ids = reqs.map((r) => r.id);
+    const itens = ids.length ? await q(sb.from("requisicao_itens").select("requisicao_id,quantidade,produtos(nome,unidade)").in("requisicao_id", ids).is("excluido_em", null)) : [];
+    const porReq = Object.fromEntries(reqs.map((r) => [r.id, r]));
+    linhas = itens.map((i) => { const r = porReq[i.requisicao_id];
+      return { data: fmtDataHora(r.data_hora), ts: r.data_hora, numero: r.numero, nome: i.produtos?.nome, unidade: i.produtos?.unidade, qtd: Number(i.quantidade),
+        resp: r.responsavel_retirada, extra: r.ordem_dia > 1 ? `Extra: ${r.justificativa_extra || ""}` : "" };
+    }).sort((a, b) => a.ts.localeCompare(b.ts) || a.nome.localeCompare(b.nome));
+    colunas = [{ k: "data", rotulo: "Data e hora" }, { k: "numero", rotulo: "Requisição" }, { k: "nome", rotulo: "Produto" }, { k: "unidade", rotulo: "Un." },
+      { k: "qtd", rotulo: "Quantidade", num: true }, { k: "resp", rotulo: "Retirada por" }, { k: "extra", rotulo: "Observação" }];
+    ind = `<div class="indicador"><span>Requisições</span><strong>${reqs.length}</strong></div>
+      <div class="indicador"><span>Retiradas extras</span><strong>${reqs.filter((r) => r.ordem_dia > 1).length}</strong></div>`;
+  }
+
+  if (tipo === "consumo") {
+    const d = await q(sb.from("v_saidas").select("produto_id,nome,categoria,unidade,tipo,quantidade").gte("dia", de).lte("dia", ate));
+    const tipos = [...new Set(d.map((x) => x.tipo))].sort();
+    const ag = {};
+    d.forEach((x) => { const a = (ag[x.produto_id] ??= { nome: x.nome, categoria: x.categoria, unidade: x.unidade, total: 0 }); a[x.tipo] = (a[x.tipo] || 0) + Number(x.quantidade); a.total += Number(x.quantidade); });
+    linhas = Object.values(ag).sort((a, b) => b.total - a.total).map((l) => ({ ...l, media: +(l.total / dias).toFixed(2) }));
+    colunas = [{ k: "nome", rotulo: "Produto" }, { k: "categoria", rotulo: "Categoria" }, { k: "unidade", rotulo: "Un." },
+      ...tipos.map((t) => ({ k: t, rotulo: t, num: true })), { k: "total", rotulo: "Total", num: true }, { k: "media", rotulo: "Média/dia", num: true }];
+    ind = `<div class="indicador"><span>Produtos com saída</span><strong>${linhas.length}</strong></div>`;
+  }
+
+  $("#rel-ind").innerHTML = ind;
+  $("#rel-head").innerHTML = `<tr>${colunas.map((c) => `<th class="${c.num ? "num" : ""}">${esc(c.rotulo)}</th>`).join("")}</tr>`;
+  $("#rel-body").innerHTML = linhas.length
+    ? linhas.map((l) => `<tr>${colunas.map((c) => `<td class="${c.num ? "num" : ""}">${c.num ? fmtQtd(l[c.k]) : esc(l[c.k])}</td>`).join("")}</tr>`).join("")
+    : `<tr><td colspan="${colunas.length}" class="vazio">Nada no período.</td></tr>`;
+  const titulos = { retiradas: "Retiradas por produto", "retiradas-det": "Retiradas detalhadas", consumo: "Consumo da cozinha" };
+  E.exp.relatorio = { titulo: titulos[tipo], arquivo: tipo, subtitulo: sub, colunas, linhas };
+}
+
+// ============================================================
+// CADASTROS (gestão)
+// ============================================================
+carregadores.cadastros = () => abrirSub($("#cad-nav [aria-selected='true']").dataset.sub);
+$("#cad-nav").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-sub]"); if (b) abrirSub(b.dataset.sub); });
+function abrirSub(sub) {
+  $$("#cad-nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.sub === sub));
+  ["produtos", "precos", "ideal", "tipos", "justs"].forEach((s) => $("#cad-" + s).classList.toggle("oculto", s !== sub));
+  ({ produtos: renderCadProdutos, precos: carregarPrecos, ideal: carregarIdeal, tipos: renderTipos, justs: renderJusts })[sub]();
+}
+
+// --- Produtos
+$("#cadp-busca").addEventListener("input", renderCadProdutos);
+function linhaProduto(p) {
+  const n = (v) => v == null ? "" : v;
+  return `<tr data-pid="${p.id || ""}">
+    <td><input data-f="nome" value="${esc(p.nome)}" style="min-width:240px"></td>
+    <td><input data-f="categoria" list="lista-categorias" value="${esc(p.categoria)}" style="min-width:200px"></td>
+    <td><select data-f="unidade">${["UND", "KG", "PCT"].map((u) => `<option ${u === p.unidade ? "selected" : ""}>${u}</option>`).join("")}</select></td>
+    <td class="num"><input class="mini" data-f="gramatura_g" type="number" step="0.01" value="${n(p.gramatura_g)}"></td>
+    <td><input data-f="critico" type="checkbox" ${p.critico ? "checked" : ""} style="width:auto"></td>
+    <td class="num"><input class="mini" data-f="tolerancia_qtd" type="number" step="0.01" min="0" value="${n(p.tolerancia_qtd)}"></td>
+    <td class="num"><input class="mini" data-f="tolerancia_pct" type="number" step="0.01" min="0" value="${n(p.tolerancia_pct)}"></td>
+    <td><input data-f="ativo" type="checkbox" ${p.ativo !== false ? "checked" : ""} style="width:auto"></td>
+    <td><button class="btn peq" data-salvar-prod>Salvar</button></td></tr>`;
+}
+function renderCadProdutos() {
+  const t = $("#cadp-busca").value.trim().toLowerCase();
+  const lista = ordenarProdutos(E.todosProdutos).filter((p) => !t || p.nome.toLowerCase().includes(t));
+  let html = "", cat = null;
+  lista.forEach((p) => { if (p.categoria !== cat) { cat = p.categoria; html += `<tr class="grupo"><td colspan="9">${esc(cat)}</td></tr>`; } html += linhaProduto(p); });
+  $("#cadp-lista").innerHTML = html;
+}
+$("#cadp-novo").addEventListener("click", () => {
+  $("#cadp-lista").insertAdjacentHTML("afterbegin", linhaProduto({ nome: "", categoria: "", unidade: "UND", ativo: true }));
+  $("#cadp-lista input[data-f='nome']").focus();
+});
+$("#cadp-lista").addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-salvar-prod]"); if (!b) return;
+  const tr = b.closest("tr"), reg = {};
+  tr.querySelectorAll("[data-f]").forEach((i) => {
+    const f = i.dataset.f;
+    reg[f] = i.type === "checkbox" ? i.checked : i.type === "number" ? (i.value === "" ? null : Number(i.value)) : i.value.trim();
+  });
+  reg.nome = reg.nome.toUpperCase(); reg.categoria = reg.categoria.toUpperCase();
+  if (!reg.nome || !reg.categoria) return toast("Nome e categoria são obrigatórios.");
+  const id = tr.dataset.pid;
+  const { error } = id ? await sb.from("produtos").update(reg).eq("id", id) : await sb.from("produtos").insert(reg);
+  if (error) return toast(msgErro(error));
+  toast(`${reg.nome} salvo.`);
+  await carregarCadastros(); renderCadProdutos(); montarContagem(); montarSaidas(); montarGrade($("#ent-grid"), E.produtos);
+});
+
+// --- Preços
+$("#pre-busca").addEventListener("input", renderPrecos);
+async function carregarPrecos() {
+  E.precos = await q(sb.from("precos").select("produto_id,preco_porcao,vigencia_inicio").order("vigencia_inicio", { ascending: false }));
+  renderPrecos();
+}
+function renderPrecos() {
+  const hoje = hojeSP(), t = $("#pre-busca").value.trim().toLowerCase();
+  const vig = {};
+  (E.precos || []).forEach((p) => { if (p.vigencia_inicio <= hoje && !vig[p.produto_id]) vig[p.produto_id] = p; });
+  let html = "", cat = null;
+  ordenarProdutos(E.produtos).filter((p) => !t || p.nome.toLowerCase().includes(t)).forEach((p) => {
+    if (p.categoria !== cat) { cat = p.categoria; html += `<tr class="grupo"><td colspan="5">${esc(cat)}</td></tr>`; }
+    const v = vig[p.id];
+    html += `<tr class="${p.critico ? "critico" : ""}"><td>${esc(p.nome)}</td><td>${esc(p.unidade)}</td>
+      <td class="num">${v ? fmtR(v.preco_porcao) : `<span class="selo pend">Sem preço</span>`}</td><td>${v ? fmtData(v.vigencia_inicio) : ""}</td>
+      <td class="num"><input class="qtd" type="number" step="0.01" min="0" data-preco="${p.id}"></td></tr>`;
+  });
+  $("#pre-lista").innerHTML = html;
+}
+$("#pre-salvar").addEventListener("click", async () => {
+  const vig = $("#pre-vig").value;
+  const regs = $$("#pre-lista input[data-preco]").filter((i) => i.value !== "").map((i) => ({ produto_id: i.dataset.preco, preco_porcao: Number(i.value), vigencia_inicio: vig }));
+  if (!vig) return toast("Informe a data de vigência.");
+  if (!regs.length) return toast("Preencha ao menos um preço novo.");
+  if (!confirm(`Salvar ${regs.length} preços com vigência a partir de ${fmtData(vig)}?`)) return;
+  const { error } = await sb.from("precos").upsert(regs, { onConflict: "produto_id,vigencia_inicio" });
+  if (error) return toast(msgErro(error));
+  toast(`${regs.length} preços salvos.`); carregarPrecos();
+});
+
+// --- Estoque ideal
+$("#ide-busca").addEventListener("input", renderIdeal);
+async function carregarIdeal() { E.ideal = await q(sb.from("estoque_ideal").select("produto_id,dia_semana,quantidade")); renderIdeal(); }
+function renderIdeal() {
+  const mapa = {}; (E.ideal || []).forEach((x) => (mapa[x.produto_id + "_" + x.dia_semana] = x.quantidade));
+  const t = $("#ide-busca").value.trim().toLowerCase();
+  let html = "", cat = null;
+  ordenarProdutos(E.produtos).filter((p) => !t || p.nome.toLowerCase().includes(t)).forEach((p) => {
+    if (p.categoria !== cat) { cat = p.categoria; html += `<tr class="grupo"><td colspan="8">${esc(cat)}</td></tr>`; }
+    html += `<tr class="${p.critico ? "critico" : ""}"><td>${esc(p.nome)} <small class="dica">${esc(p.unidade)}</small></td>
+      ${DIAS.map((_, d) => `<td class="num"><input class="mini" type="number" min="0" step="0.01" data-ideal="${p.id}" data-dia="${d}" value="${mapa[p.id + "_" + d] ?? ""}" aria-label="${esc(p.nome)} ${DIAS[d]}"></td>`).join("")}</tr>`;
+  });
+  $("#ide-lista").innerHTML = html;
+}
+$("#ide-salvar").addEventListener("click", async () => {
+  const existentes = new Set((E.ideal || []).map((x) => x.produto_id + "_" + x.dia_semana));
+  const regs = $$("#ide-lista input[data-ideal]")
+    .filter((i) => i.value !== "" || existentes.has(i.dataset.ideal + "_" + i.dataset.dia))
+    .map((i) => ({ produto_id: i.dataset.ideal, dia_semana: Number(i.dataset.dia), quantidade: i.value === "" ? 0 : Number(i.value) }));
+  if (!regs.length) return toast("Preencha ao menos um valor.");
+  const { error } = await sb.from("estoque_ideal").upsert(regs, { onConflict: "produto_id,dia_semana" });
+  if (error) return toast(msgErro(error));
+  toast("Estoque ideal salvo."); carregarIdeal();
+});
+
+// --- Tipos de saída e justificativas
+function renderListaSimples(alvo, lista, tabela) {
+  $(alvo).innerHTML = lista.map((x) => `<tr><td>${esc(x.nome)}</td><td><input type="checkbox" style="width:auto" data-tab="${tabela}" data-id="${x.id}" ${x.ativo ? "checked" : ""}></td></tr>`).join("");
+}
+const renderTipos = () => renderListaSimples("#tipo-lista", E.tipos, "tipos_saida");
+const renderJusts = () => renderListaSimples("#just-lista", E.justificativas, "justificativas_extra");
+["#tipo-lista", "#just-lista"].forEach((s) => $(s).addEventListener("change", async (ev) => {
+  const i = ev.target;
+  const { error } = await sb.from(i.dataset.tab).update({ ativo: i.checked }).eq("id", i.dataset.id);
+  if (error) return toast(msgErro(error));
+  await carregarCadastros(); toast(i.checked ? "Ativado." : "Desativado.");
+}));
+async function addSimples(input, tabela, render) {
+  const nome = $(input).value.trim(); if (!nome) return;
+  const { error } = await sb.from(tabela).insert({ nome });
+  if (error) return toast(msgErro(error));
+  $(input).value = ""; await carregarCadastros(); render(); toast("Adicionado.");
+}
+$("#tipo-add").addEventListener("click", () => addSimples("#tipo-novo", "tipos_saida", renderTipos));
+$("#just-add").addEventListener("click", () => addSimples("#just-novo", "justificativas_extra", renderJusts));
+
+// ============================================================
+// AUDITORIA (gestão)
+// ============================================================
+carregadores.auditoria = carregarAuditoria;
+$("#aud-acao").addEventListener("change", carregarAuditoria);
+async function carregarAuditoria() {
+  let qr = sb.from("v_auditoria").select("*").order("data_hora", { ascending: false }).limit(200);
+  if ($("#aud-acao").value) qr = qr.eq("acao", $("#aud-acao").value);
+  const d = await q(qr);
+  const nomeAcao = { INSERT: "Lançamento", EDICAO: "Edição", EXCLUSAO: "Exclusão", RESTAURACAO: "Restauração" };
+  const ignorar = new Set(["created_at", "scan_anexado_em", "excluido_em", "excluido_por", "dia"]);
+  const prodNome = (id) => E.todosProdutos.find((p) => p.id === id)?.nome;
+  $("#aud-lista").innerHTML = d.length ? d.map((a) => {
+    const reg = a.depois || a.antes || {};
+    let det = [reg.numero, prodNome(reg.produto_id), reg.nome].filter(Boolean).join(" | ");
+    if (a.acao === "EDICAO" && a.antes && a.depois) {
+      const mud = Object.keys(a.depois).filter((k) => !ignorar.has(k) && JSON.stringify(a.antes[k]) !== JSON.stringify(a.depois[k]))
+        .map((k) => `${k}: ${a.antes[k] ?? "vazio"} → ${a.depois[k] ?? "vazio"}`);
+      det += mud.length ? ` | ${mud.join("; ")}` : "";
+    }
+    if (a.acao === "EXCLUSAO") det += ` | motivo: ${a.depois?.motivo_exclusao || ""}`;
+    if (a.acao === "INSERT" && reg.quantidade != null) det += ` | qtd ${fmtQtd(reg.quantidade)}`;
+    const cls = a.acao === "EXCLUSAO" ? "ruim" : a.acao === "EDICAO" ? "pend" : "neutro";
+    return `<tr><td>${fmtDataHora(a.data_hora)}</td><td>${esc(a.usuario_nome || "Sistema")}</td><td>${esc(NOME_TABELA[a.tabela] || a.tabela)}</td>
+      <td><span class="selo ${cls}">${nomeAcao[a.acao] || a.acao}</span></td><td>${esc(det)}</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="vazio">Nada registrado.</td></tr>`;
+}
 </script>
 </body>
 </html>
