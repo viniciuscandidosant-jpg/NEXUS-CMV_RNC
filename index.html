@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   --gelo: #EDF2F4; --papel: #FFFFFF; --tinta: #13262F; --tinta-2: #4A5F69;
@@ -43,7 +44,7 @@ header { background: var(--tinta); color: var(--papel); position: sticky; top: e
 .marca small { font: 500 14px var(--sans); opacity: .7; margin-left: 8px; }
 .usuario { font-size: 14px; opacity: .85; }
 nav { display: flex; gap: 2px; max-width: 1180px; margin: 0 auto; padding: 0 20px; overflow-x: auto; scrollbar-width: thin; }
-nav button { background: none; border: 0; color: #B9CBD2; padding: 10px 12px; font: 600 16px var(--cond); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+nav button { background: none; border: 0; color: #B9CBD2; padding: 10px 10px; font: 600 15px var(--cond); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
 nav button[aria-selected="true"] { color: var(--papel); border-bottom-color: #7FC3CF; }
 main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
 h2 { font: 700 26px/1.15 var(--cond); margin: 0; }
@@ -104,9 +105,9 @@ td input.mini { width: 88px; text-align: right; padding: 6px 8px; }
 .bloco .tabela-wrap { border: 0; margin: 0; }
 .bloco ul { margin: 0; padding-left: 18px; }
 .indicadores { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.indicador { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 12px 16px; min-width: 180px; flex: 1; }
+.indicador { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 12px 16px; min-width: 190px; flex: 1; }
 .indicador span { display: block; font-size: 14px; color: var(--tinta-2); }
-.indicador strong { font: 700 30px/1.15 var(--cond); }
+.indicador strong { font: 700 clamp(22px, 2.3vw, 30px)/1.15 var(--cond); white-space: nowrap; }
 
 .saldos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .saldo-card { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 14px 16px; }
@@ -128,6 +129,15 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
 .sugestao { font-size: 13px; color: var(--tinta-2); margin: -4px 0 10px; }
 .barra-acao { position: sticky; bottom: env(safe-area-inset-bottom, 0px); background: var(--gelo); padding: 12px 0; display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--linha); }
 
+.graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 20px; }
+@media (max-width: 520px) { .graficos { grid-template-columns: 1fr; } }
+.grafico { position: relative; height: 270px; }
+.indicador small { display: block; font-size: 13px; color: var(--tinta-2); margin-top: 2px; }
+.indicador.ruim strong { color: var(--casco); }
+.indicador.bom strong { color: var(--ok); }
+tr.recontar td { background: #FBF3E6 !important; }
+input.sugerido { background: #FBF3E6; border-color: var(--ambar); }
+.selo.obs { background: #EDE3F4; color: #5B3A7A; }
 #toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--tinta); color: var(--papel); padding: 10px 16px; border-radius: 4px; z-index: 50; max-width: calc(100% - 32px); }
 
 #impressao { display: none; }
@@ -177,6 +187,7 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
     </div>
     <nav role="tablist" id="nav">
       <button role="tab" data-aba="painel" aria-selected="true">Painel</button>
+      <button role="tab" data-aba="indicadores" data-gestor>Indicadores</button>
       <button role="tab" data-aba="requisicoes">Requisições</button>
       <button role="tab" data-aba="contagem">Contagem</button>
       <button role="tab" data-aba="saidas">Saídas</button>
@@ -196,6 +207,42 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
       <div class="topo-secao"><h2>Painel</h2><button class="btn sec peq" id="painel-atualizar">Atualizar</button></div>
       <div class="indicadores" id="painel-ind"></div>
       <div class="painel" id="painel-blocos"></div>
+    </section>
+
+    <!-- INDICADORES -->
+    <section id="aba-indicadores" class="oculto">
+      <div class="topo-secao"><h2>Indicadores</h2>
+        <button class="btn sec peq" data-exp="indicadores" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="indicadores" data-fmt="pdf">PDF</button>
+      </div>
+      <div class="filtros">
+        <div class="campo"><label for="ind-de">De</label><input type="date" id="ind-de"></div>
+        <div class="campo"><label for="ind-ate">Até</label><input type="date" id="ind-ate"></div>
+        <div class="campo"><label for="ind-local">Desvios de</label>
+          <select id="ind-local"><option value="COZINHA">Cozinha</option><option value="">Cozinha e câmara principal</option></select></div>
+        <button class="btn" id="ind-atualizar">Atualizar</button>
+      </div>
+      <div class="indicadores" id="ind-cards"></div>
+      <p class="dica" id="ind-aviso"></p>
+      <div class="graficos">
+        <div class="bloco"><h3>Tendência semanal</h3><div class="grafico"><canvas id="g-tendencia"></canvas></div></div>
+        <div class="bloco"><h3>Pareto do desvio (R$)</h3><div class="grafico"><canvas id="g-pareto"></canvas></div></div>
+        <div class="bloco"><h3>Desvio por dia da semana</h3><p class="dica">Dia em que a contagem apurou o desvio.</p><div class="grafico"><canvas id="g-semana"></canvas></div></div>
+        <div class="bloco"><h3>Perdas registradas × desvio por causa (R$)</h3><div class="grafico"><canvas id="g-causas"></canvas></div></div>
+      </div>
+      <h3>Aderência ao processo</h3>
+      <div class="indicadores" id="ind-aderencia"></div>
+      <div class="graficos">
+        <div class="bloco"><h3>Retiradas extras por semana</h3><div class="grafico"><canvas id="g-extras"></canvas></div></div>
+        <div class="bloco"><h3>Motivos das retiradas extras</h3><div class="grafico"><canvas id="g-motivos"></canvas></div></div>
+      </div>
+      <h3>Índice de desvio por produto</h3>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Consumo (R$)</th><th class="num">Desvio (qtd)</th><th class="num">Desvio (R$)</th><th class="num">Índice</th><th></th></tr></thead><tbody id="ind-prod"></tbody></table></div>
+      <div class="topo-secao" style="margin-top:8px"><h3 style="margin:0 auto 0 0">Cobertura da câmara principal</h3>
+        <button class="btn sec peq" data-exp="cobertura" data-fmt="xlsx">Excel</button>
+        <button class="btn sec peq" data-exp="cobertura" data-fmt="pdf">PDF</button></div>
+      <p class="dica">Saldo da câmara principal dividido pela retirada média diária dos últimos 28 dias.</p>
+      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Saldo principal</th><th class="num">Retirada média/dia</th><th class="num">Cobertura</th></tr></thead><tbody id="ind-cob"></tbody></table></div>
     </section>
 
     <!-- REQUISIÇÕES -->
@@ -228,6 +275,7 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
         <div class="campo"><label for="cont-busca">Buscar produto</label><input id="cont-busca" placeholder="Nome"></div>
       </div>
       <p class="dica">Contagem cega: o sistema não mostra o saldo esperado. Deixe em branco o que não foi contado; digite 0 para o que acabou.</p>
+      <div id="cont-aviso"></div>
       <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th>Unidade</th><th class="num">Contado</th></tr></thead><tbody id="cont-grid"></tbody></table></div>
       <div class="campo"><label for="cont-obs">Observação (opcional)</label><input id="cont-obs"></div>
       <div class="barra-acao"><span id="cont-resumo" class="dica" style="margin:0"></span><button class="btn" id="cont-salvar">Salvar contagem</button></div>
@@ -272,24 +320,44 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
 
     <!-- DESVIOS -->
     <section id="aba-desvios" class="oculto">
-      <div class="topo-secao"><h2>Desvios</h2>
-        <button class="btn sec peq" data-exp="desvios" data-fmt="xlsx">Excel</button>
-        <button class="btn sec peq" data-exp="desvios" data-fmt="pdf">PDF</button>
+      <div class="topo-secao"><h2>Desvios</h2></div>
+      <div class="subnav" id="dev-nav">
+        <button data-dsub="analise" aria-selected="true">Análise</button>
+        <button data-dsub="trat">Tratativas <span id="trat-badge"></span></button>
       </div>
-      <div class="filtros">
-        <div class="campo"><label for="dev-de">De</label><input type="date" id="dev-de"></div>
-        <div class="campo"><label for="dev-ate">Até</label><input type="date" id="dev-ate"></div>
-        <div class="campo"><label for="dev-local">Local</label>
-          <select id="dev-local"><option value="COZINHA">Cozinha</option><option value="PRINCIPAL">Câmara principal</option><option value="">Ambos</option></select></div>
-        <label class="chk"><input type="checkbox" id="dev-criticos"> Só críticos</label>
-        <label class="chk"><input type="checkbox" id="dev-fora"> Só fora da tolerância</label>
+
+      <div id="dev-analise">
+        <div class="filtros">
+          <div class="campo"><label for="dev-de">De</label><input type="date" id="dev-de"></div>
+          <div class="campo"><label for="dev-ate">Até</label><input type="date" id="dev-ate"></div>
+          <div class="campo"><label for="dev-local">Local</label>
+            <select id="dev-local"><option value="COZINHA">Cozinha</option><option value="PRINCIPAL">Câmara principal</option><option value="">Ambos</option></select></div>
+          <label class="chk"><input type="checkbox" id="dev-criticos"> Só críticos</label>
+          <label class="chk"><input type="checkbox" id="dev-fora"> Só fora da tolerância</label>
+          <button class="btn sec peq" data-exp="desvios" data-fmt="xlsx">Excel</button>
+          <button class="btn sec peq" data-exp="desvios" data-fmt="pdf">PDF</button>
+        </div>
+        <p class="dica">Desvio positivo é falta (sumiu); negativo é sobra. Calculado entre duas contagens seguidas do mesmo produto.</p>
+        <div class="indicadores" id="dev-ind"></div>
+        <h3>Por produto</h3>
+        <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Ocorrências</th><th class="num">Desvio (qtd)</th><th class="num">Desvio (R$)</th></tr></thead><tbody id="dev-rank"></tbody></table></div>
+        <h3>Detalhe</h3>
+        <div class="tabela-wrap"><table><thead><tr><th>Contagem</th><th>Produto</th><th>Local</th><th class="num">Anterior</th><th class="num">Entrou</th><th class="num">Saiu</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Desvio</th><th class="num">R$</th><th>Tratativa</th><th>Justificativa</th></tr></thead><tbody id="dev-lista"></tbody></table></div>
       </div>
-      <p class="dica">Desvio positivo é falta (sumiu); negativo é sobra. Calculado entre duas contagens seguidas do mesmo produto.</p>
-      <div class="indicadores" id="dev-ind"></div>
-      <h3>Por produto</h3>
-      <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Ocorrências</th><th class="num">Desvio (qtd)</th><th class="num">Desvio (R$)</th></tr></thead><tbody id="dev-rank"></tbody></table></div>
-      <h3>Detalhe</h3>
-      <div class="tabela-wrap"><table><thead><tr><th>Contagem</th><th>Produto</th><th>Local</th><th class="num">Anterior</th><th class="num">Entrou</th><th class="num">Saiu</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Desvio</th><th class="num">R$</th><th>Justificativa</th></tr></thead><tbody id="dev-lista"></tbody></table></div>
+
+      <div id="dev-trat" class="oculto">
+        <div class="filtros">
+          <div class="campo"><label for="trat-status">Situação</label>
+            <select id="trat-status"><option value="PENDENTES">Pendentes (aberto e em análise)</option><option value="ABERTO">Aberto</option><option value="EM_ANALISE">Em análise</option><option value="CONCLUIDO">Concluído</option><option value="">Todos</option></select></div>
+          <div class="campo"><label for="trat-de">De</label><input type="date" id="trat-de"></div>
+          <div class="campo"><label for="trat-ate">Até</label><input type="date" id="trat-ate"></div>
+          <button class="btn sec peq" data-exp="tratativas" data-fmt="xlsx">Excel</button>
+          <button class="btn sec peq" data-exp="tratativas" data-fmt="pdf">PDF</button>
+        </div>
+        <p class="dica">Todo desvio fora da tolerância entra aqui como aberto e fica no painel até ser concluído com a causa.</p>
+        <div id="trat-obs"></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Contagem</th><th>Produto</th><th>Local</th><th class="num">Desvio</th><th class="num">R$</th><th>Situação</th><th>Causa</th><th>Ação e responsável</th><th></th></tr></thead><tbody id="trat-lista"></tbody></table></div>
+      </div>
     </section>
 
     <!-- SALDOS -->
@@ -352,6 +420,8 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
         <button data-sub="ideal">Estoque ideal</button>
         <button data-sub="tipos">Tipos de saída</button>
         <button data-sub="justs">Justificativas</button>
+        <button data-sub="causas">Causas de desvio</button>
+        <button data-sub="parametros">Parâmetros</button>
         <button data-sub="usuarios">Usuários</button>
       </div>
 
@@ -377,7 +447,9 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
 
       <div id="cad-ideal" class="oculto">
         <p class="dica">Quantidade mínima que a cozinha deve ter em cada dia. A requisição sugere: ideal do dia − saldo da cozinha.</p>
-        <div class="filtros"><div class="campo"><label for="ide-busca">Buscar</label><input id="ide-busca" placeholder="Nome"></div></div>
+        <div class="filtros"><div class="campo"><label for="ide-busca">Buscar</label><input id="ide-busca" placeholder="Nome"></div>
+          <button class="btn sec" id="ide-sugerir">Calcular sugestão pelo consumo</button></div>
+        <p class="dica" id="ide-dica-sug"></p>
         <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Dom</th><th class="num">Seg</th><th class="num">Ter</th><th class="num">Qua</th><th class="num">Qui</th><th class="num">Sex</th><th class="num">Sáb</th></tr></thead><tbody id="ide-lista"></tbody></table></div>
         <div class="barra-acao"><button class="btn" id="ide-salvar">Salvar estoque ideal</button></div>
       </div>
@@ -390,6 +462,17 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
       <div id="cad-justs" class="oculto">
         <div class="filtros"><div class="campo"><label for="just-novo">Nova justificativa de retirada extra</label><input id="just-novo"></div><button class="btn" id="just-add">Adicionar</button></div>
         <div class="tabela-wrap"><table><thead><tr><th>Justificativa</th><th>Ativo</th></tr></thead><tbody id="just-lista"></tbody></table></div>
+      </div>
+
+      <div id="cad-causas" class="oculto">
+        <div class="filtros"><div class="campo"><label for="causa-novo">Nova causa de desvio</label><input id="causa-novo"></div><button class="btn" id="causa-add">Adicionar</button></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Causa</th><th>Ativo</th></tr></thead><tbody id="causa-lista"></tbody></table></div>
+      </div>
+
+      <div id="cad-parametros" class="oculto">
+        <p class="dica">Regras usadas nos indicadores, na recontagem, na reincidência e no estoque ideal sugerido.</p>
+        <div class="tabela-wrap"><table><thead><tr><th>Parâmetro</th><th class="num">Valor</th><th>Unidade</th></tr></thead><tbody id="par-lista"></tbody></table></div>
+        <div class="barra-acao"><button class="btn" id="par-salvar">Salvar parâmetros</button></div>
       </div>
 
       <div id="cad-usuarios" class="oculto">
@@ -441,6 +524,26 @@ dialog::backdrop { background: rgba(19, 38, 47, .55); }
   </form>
 </dialog>
 
+<dialog id="modal-trat">
+  <form id="form-trat" method="dialog">
+    <div class="modal-cab"><h2>Tratativa do desvio</h2></div>
+    <div class="modal-corpo">
+      <p id="trat-info" style="margin-top:0"></p>
+      <div class="campo"><label for="trat-f-status">Situação</label>
+        <select id="trat-f-status"><option value="ABERTO">Aberto</option><option value="EM_ANALISE">Em análise</option><option value="CONCLUIDO">Concluído</option></select></div>
+      <div class="campo"><label for="trat-f-causa">Causa</label><select id="trat-f-causa"></select></div>
+      <div class="campo"><label for="trat-f-acao">Ação tomada</label><textarea id="trat-f-acao"></textarea></div>
+      <div class="campo"><label for="trat-f-resp">Responsável pela ação</label><input id="trat-f-resp" autocomplete="off"></div>
+      <div class="campo"><label for="trat-f-obs">Observação (opcional)</label><textarea id="trat-f-obs"></textarea></div>
+      <div class="erro" id="trat-erro"></div>
+    </div>
+    <div class="modal-pe">
+      <button type="button" class="btn sec" id="trat-cancelar">Cancelar</button>
+      <button type="submit" class="btn">Salvar tratativa</button>
+    </div>
+  </form>
+</dialog>
+
 <input type="file" id="input-scan" accept="image/*,application/pdf" class="oculto">
 <div id="impressao"></div>
 <div id="toast" class="oculto" role="status"></div>
@@ -461,7 +564,10 @@ const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const NOME_LOCAL = { COZINHA: "Cozinha", PRINCIPAL: "Câmara principal" };
 const NOME_TIPO_CONT = { DIARIA: "Diária", CHECK: "Check", GERAL: "Geral" };
 const NOME_TABELA = { entradas: "Entrada", saidas: "Saída", requisicoes: "Requisição", requisicao_itens: "Item de requisição",
-  contagens: "Contagem", contagem_itens: "Item de contagem", produtos: "Produto", precos: "Preço", estoque_ideal: "Estoque ideal", perfis: "Usuário" };
+  contagens: "Contagem", contagem_itens: "Item de contagem", produtos: "Produto", precos: "Preço", estoque_ideal: "Estoque ideal", perfis: "Usuário", desvio_tratativas: "Tratativa de desvio" };
+const NOME_STATUS = { ABERTO: "Aberto", EM_ANALISE: "Em análise", CONCLUIDO: "Concluído" };
+const CLS_STATUS = { ABERTO: "ruim", EM_ANALISE: "pend", CONCLUIDO: "ok" };
+const DIAS_SEG = [1, 2, 3, 4, 5, 6, 0];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (s) => document.querySelector(s);
@@ -498,6 +604,20 @@ function msgErro(e) {
   if (/duplicate key/i.test(m)) return "Já existe um registro com esses dados.";
   return m;
 }
+// Busca paginada (a API devolve no máximo 1000 linhas por vez)
+async function tudo(fn) {
+  const out = [];
+  for (let i = 0; ; i += 1000) {
+    const d = await q(fn().range(i, i + 999));
+    out.push(...d);
+    if (d.length < 1000) return out;
+  }
+}
+const inicioDia = (ymd) => new Date(ymd + "T00:00:00-03:00").toISOString();
+const segunda = (ymd) => addDias(ymd, -((new Date(ymd + "T12:00:00Z").getUTCDay() + 6) % 7));
+const diaSemana = (ymd) => new Date(ymd + "T12:00:00Z").getUTCDay();
+const fmtPct = (n) => n == null || !isFinite(n) ? "-" : Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
+
 async function q(promise) {
   const { data, error } = await promise;
   if (error) { toast(msgErro(error)); throw error; }
@@ -625,6 +745,11 @@ async function carregarCadastros() {
   E.produtos = E.todosProdutos.filter((x) => x.ativo);
   E.justificativas = j.data || [];
   E.tipos = t.data || [];
+  const [pa, ca] = await Promise.all([sb.from("parametros").select("*").order("chave"), sb.from("causas_desvio").select("*").order("id")]);
+  E.paramsLista = pa.data || [];
+  E.params = Object.fromEntries(E.paramsLista.map((x) => [x.chave, Number(x.valor)]));
+  E.causas = ca.data || [];
+  $("#trat-f-causa").innerHTML = `<option value="">Selecione</option>` + E.causas.filter((x) => x.ativo).map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
   $("#req-just").innerHTML = `<option value="">Selecione</option>` + E.justificativas.filter((x) => x.ativo).map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
   $("#sai-tipo").innerHTML = E.tipos.filter((x) => x.ativo).map((x) => `<option value="${x.id}">${esc(x.nome)}</option>`).join("");
   $("#ext-produto").innerHTML = opcoesProdutos($("#ext-produto").value, E.todosProdutos);
@@ -638,6 +763,8 @@ function prepararFormularios() {
   $("#dev-de").value = addDias(hoje, -6); $("#dev-ate").value = hoje;
   $("#rel-de").value = addDias(hoje, -29); $("#rel-ate").value = hoje;
   $("#pre-vig").value = hoje;
+  $("#ind-de").value = addDias(segunda(hoje), -49); $("#ind-ate").value = hoje;
+  $("#trat-de").value = addDias(hoje, -29); $("#trat-ate").value = hoje;
   montarContagem(); montarSaidas();
   montarGrade($("#ent-grid"), E.produtos);
 }
@@ -649,37 +776,231 @@ carregadores.painel = carregarPainel;
 $("#painel-atualizar").addEventListener("click", carregarPainel);
 
 async function carregarPainel() {
-  const hoje = hojeSP(), de = addDias(hoje, -6);
-  const [extras, desv, pend, saldos, precos] = await Promise.all([
+  const hoje = hojeSP(), de = addDias(hoje, -6), g = isGestor();
+  const vazio = Promise.resolve({ data: [] });
+  const [extras, desv, pend, saldos, precos, trat, obs] = await Promise.all([
     sb.from("v_requisicoes_dia").select("numero,dia,data_hora,justificativa_extra,comentario").gt("ordem_dia", 1).gte("dia", de).order("data_hora", { ascending: false }),
-    isGestor() ? sb.from("v_desvios").select("nome,dia,desvio,desvio_valor,unidade").eq("local", "COZINHA").eq("fora_tolerancia", true).gte("dia", de).order("data_hora", { ascending: false }) : Promise.resolve({ data: [] }),
+    g ? sb.from("v_desvios").select("nome,dia,desvio,desvio_valor,unidade").eq("local", "COZINHA").eq("fora_tolerancia", true).gte("dia", de).order("data_hora", { ascending: false }) : vazio,
     sb.from("v_pendencias_scan").select("numero"),
     sb.from("v_saldo_atual").select("produto_id,nome,local,ultima_contagem").eq("local", "COZINHA"),
-    sb.from("precos").select("produto_id,vigencia_inicio").lte("vigencia_inicio", hoje),
+    g ? sb.from("precos").select("produto_id,vigencia_inicio").lte("vigencia_inicio", hoje) : vazio,
+    g ? sb.from("v_tratativas").select("item_id").neq("status", "CONCLUIDO") : vazio,
+    g ? sb.from("v_observacao").select("*") : vazio,
   ]);
+  const cob = g ? (await calcularCobertura()).filter((c) => c.alerta) : [];
   const criticos = new Set(E.produtos.filter((p) => p.critico).map((p) => p.id));
   const semContagem = (saldos.data || []).filter((s) => criticos.has(s.produto_id) && (!s.ultima_contagem || diaSP(s.ultima_contagem) !== hoje));
   const comPreco = new Set((precos.data || []).map((p) => p.produto_id));
   const semPreco = E.produtos.filter((p) => !comPreco.has(p.id));
   const d = desv.data || [];
-  const faltaR = d.reduce((s, x) => s + (Number(x.desvio_valor) > 0 ? Number(x.desvio_valor) : 0), 0);
+  const faltaR = d.reduce((s, x) => s + Math.max(Number(x.desvio_valor) || 0, 0), 0);
+  const nTrat = trat.data?.length || 0, nObs = obs.data?.length || 0;
 
-  $("#painel-ind").innerHTML = (isGestor() ? `
-    <div class="indicador"><span>Desvios fora da tolerância (7 dias)</span><strong>${d.length}</strong></div>
-    <div class="indicador"><span>Falta em R$ nesses desvios</span><strong class="${faltaR > 0 ? "neg" : ""}">${fmtR(faltaR)}</strong></div>` : "") + `
+  $("#painel-ind").innerHTML = (g ? `
+    <div class="indicador ${nTrat ? "ruim" : ""}"><span>Desvios aguardando tratativa</span><strong>${nTrat}</strong></div>
+    <div class="indicador"><span>Falta em R$ fora da tolerância (7 dias)</span><strong class="${faltaR > 0 ? "neg" : ""}">${fmtR(faltaR)}</strong></div>
+    <div class="indicador ${nObs ? "ruim" : ""}"><span>Itens em observação</span><strong>${nObs}</strong></div>` : "") + `
     <div class="indicador"><span>Retiradas extras (7 dias)</span><strong>${extras.data?.length || 0}</strong></div>
     <div class="indicador"><span>Requisições sem scan</span><strong>${pend.data?.length || 0}</strong></div>`;
 
   const bloco = (titulo, corpo) => `<div class="bloco"><h3>${titulo}</h3>${corpo}</div>`;
   const lista = (itens, vazio) => itens.length ? `<ul>${itens.join("")}</ul>` : `<p class="dica" style="margin:0">${vazio}</p>`;
+  const lim = E.params?.reincidencia_contagens ?? 3;
   $("#painel-blocos").innerHTML = [
-    isGestor() && bloco("Desvios fora da tolerância", lista(d.slice(0, 12).map((x) => `<li>${fmtData(x.dia)}: ${esc(x.nome)}, <span class="${clsNum(x.desvio)}">${fmtQtd(x.desvio)} ${esc(x.unidade)}</span> (${fmtR(x.desvio_valor)})</li>`), "Nenhum desvio fora da tolerância nos últimos 7 dias.")),
-    bloco("Retiradas extras", lista((extras.data || []).map((x) => `<li>${fmtDataHora(x.data_hora)}: ${esc(x.numero)}, ${esc(x.justificativa_extra || "")}${x.comentario ? ` (${esc(x.comentario)})` : ""}</li>`), "Nenhuma retirada extra nos últimos 7 dias.")),
+    g && bloco("Itens em observação", lista((obs.data || []).map((x) => `<li>${esc(x.nome)} (${NOME_LOCAL[x.local].toLowerCase()}): ${lim} contagens seguidas fora da tolerância, ${fmtR(x.desvio_valor_total)}</li>`), "Nenhum item com desvio recorrente.")),
+    g && bloco("Desvios fora da tolerância (7 dias)", lista(d.slice(0, 12).map((x) => `<li>${fmtData(x.dia)}: ${esc(x.nome)}, <span class="${clsNum(x.desvio)}">${fmtQtd(x.desvio)} ${esc(x.unidade)}</span> (${fmtR(x.desvio_valor)})</li>`), "Nenhum desvio fora da tolerância nos últimos 7 dias.")),
+    bloco("Retiradas extras (7 dias)", lista((extras.data || []).map((x) => `<li>${fmtDataHora(x.data_hora)}: ${esc(x.numero)}, ${esc(x.justificativa_extra || "")}${x.comentario ? ` (${esc(x.comentario)})` : ""}</li>`), "Nenhuma retirada extra nos últimos 7 dias.")),
     bloco("Críticos sem contagem hoje", lista(semContagem.map((x) => `<li>${esc(x.nome)}</li>`), "Todos os críticos foram contados hoje.")),
-    isGestor() && bloco("Produtos sem preço", semPreco.length
-      ? `<p style="margin:0">${semPreco.length} produtos sem preço vigente. O desvio em R$ fica em branco para eles.${isGestor() ? ` Cadastre em Cadastros → Preços.` : ""}</p>`
+    g && bloco("Câmara principal com cobertura baixa", lista(cob.map((c) => `<li>${esc(c.nome)}: ${fmtQtd(c.saldo)} ${esc(c.unidade)}, cobre ${fmtQtd(c.dias)} dias</li>`), "Nenhum produto abaixo do limite de cobertura.")),
+    g && bloco("Produtos sem preço", semPreco.length
+      ? `<p style="margin:0">${semPreco.length} produtos sem preço vigente. O desvio em R$ e o índice de desvio ficam incompletos para eles. Cadastre em Cadastros → Preços.</p>`
       : `<p class="dica" style="margin:0">Todos os produtos têm preço.</p>`),
   ].filter(Boolean).join("");
+}
+
+async function calcularCobertura() {
+  const hoje = hojeSP(), de = addDias(hoje, -28);
+  const [sal, ret] = await Promise.all([
+    q(sb.from("v_saldo_atual").select("produto_id,nome,saldo").eq("local", "PRINCIPAL")),
+    tudo(() => sb.from("v_retiradas_diarias").select("produto_id,quantidade").gte("dia", de).lt("dia", hoje)),
+  ]);
+  const cons = {};
+  ret.forEach((r) => (cons[r.produto_id] = (cons[r.produto_id] || 0) + Number(r.quantidade)));
+  const lim = E.params?.cobertura_alerta_dias ?? 2;
+  return sal.map((s) => {
+    const p = E.produtos.find((x) => x.id === s.produto_id);
+    const media = (cons[s.produto_id] || 0) / 28;
+    const dias = media > 0 ? Math.max(Number(s.saldo), 0) / media : null;
+    return { produto_id: s.produto_id, nome: s.nome, unidade: p?.unidade || "", critico: p?.critico, saldo: Number(s.saldo),
+      media: +media.toFixed(2), dias: dias == null ? null : +dias.toFixed(1), alerta: dias != null && dias < lim };
+  }).filter((c) => c.media > 0 || c.saldo !== 0).sort((a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9));
+}
+
+// ============================================================
+// INDICADORES
+// ============================================================
+carregadores.indicadores = carregarIndicadores;
+$("#ind-atualizar").addEventListener("click", carregarIndicadores);
+
+const COR = { mare: "#0F5C6B", casco: "#B3342B", ambar: "#9A5F0C", cinza: "#8A9AA2", ok: "#2E6B3F", tinta: "#13262F" };
+const graficos = {};
+function grafico(id, cfg) {
+  graficos[id]?.destroy();
+  Chart.defaults.font.family = '"Source Sans 3", "Segoe UI", Arial, sans-serif';
+  Chart.defaults.color = "#4A5F69";
+  cfg.options = { responsive: true, maintainAspectRatio: false, ...cfg.options };
+  graficos[id] = new Chart(document.getElementById(id), cfg);
+}
+const eixoR = { ticks: { callback: (v) => "R$ " + Number(v).toLocaleString("pt-BR") } };
+const eixoPct = { ticks: { callback: (v) => v + "%" } };
+
+async function carregarIndicadores() {
+  const de = $("#ind-de").value, ate = $("#ind-ate").value, local = $("#ind-local").value, hoje = hojeSP();
+  if (!de || !ate || de > ate) return toast("Período inválido.");
+  const meta = E.params.meta_indice_desvio ?? 2;
+  const ini = inicioDia(de), fim = inicioDia(addDias(ate, 1));
+
+  const [desv, saidas, trat, reqs, conts, obs, cob] = await Promise.all([
+    tudo(() => { let x = sb.from("v_desvios").select("produto_id,nome,unidade,dia,desvio,desvio_valor,fora_tolerancia,local").gte("dia", de).lte("dia", ate); return local ? x.eq("local", local) : x; }),
+    tudo(() => sb.from("v_saidas").select("produto_id,nome,unidade,tipo,dia,quantidade,valor").gte("dia", de).lte("dia", ate)),
+    tudo(() => { let x = sb.from("v_tratativas").select("item_id,status,causa,causa_explica,desvio_valor").gte("dia", de).lte("dia", ate); return local ? x.eq("local", local) : x; }),
+    tudo(() => sb.from("v_requisicoes_dia").select("dia,scan_path,ordem_dia,justificativa_extra").gte("dia", de).lte("dia", ate)),
+    tudo(() => sb.from("v_contagens").select("produto_id,data_hora").eq("local", "COZINHA").gte("data_hora", ini).lt("data_hora", fim)),
+    q(sb.from("v_observacao").select("produto_id,local")),
+    calcularCobertura(),
+  ]);
+
+  // ---- Totais
+  const consumoR = saidas.reduce((s, x) => s + (Number(x.valor) || 0), 0);
+  const semPreco = saidas.filter((x) => x.valor == null).length + desv.filter((x) => x.desvio_valor == null && Number(x.desvio) !== 0).length;
+  const desvioR = desv.reduce((s, x) => s + (Number(x.desvio_valor) || 0), 0);
+  const perdasR = saidas.filter((x) => x.tipo === "Perda").reduce((s, x) => s + (Number(x.valor) || 0), 0);
+  const indice = consumoR > 0 ? desvioR / consumoR * 100 : null;
+  const pendTrat = trat.filter((t) => t.status !== "CONCLUIDO").length;
+  const obsSet = new Set(obs.map((o) => o.produto_id));
+  const clsMeta = (v) => v == null ? "" : v > meta ? "ruim" : "bom";
+
+  $("#ind-cards").innerHTML = `
+    <div class="indicador ${clsMeta(indice)}"><span>Índice de desvio</span><strong>${fmtPct(indice)}</strong><small>Meta: até ${fmtPct(meta)}</small></div>
+    <div class="indicador"><span>Desvio líquido</span><strong class="${desvioR > 0 ? "neg" : ""}">${fmtR(desvioR)}</strong><small>Falta menos sobra</small></div>
+    <div class="indicador"><span>Consumo valorizado</span><strong>${fmtR(consumoR)}</strong><small>Todas as saídas da cozinha</small></div>
+    <div class="indicador"><span>Perdas registradas</span><strong>${fmtR(perdasR)}</strong><small>Saídas do tipo Perda</small></div>
+    <div class="indicador ${pendTrat ? "ruim" : "bom"}"><span>Tratativas pendentes</span><strong>${pendTrat}</strong><small>de ${trat.length} desvios fora da tolerância</small></div>
+    <div class="indicador ${obsSet.size ? "ruim" : ""}"><span>Itens em observação</span><strong>${obsSet.size}</strong><small>Desvio recorrente</small></div>`;
+  $("#ind-aviso").textContent = semPreco ? `Atenção: ${semPreco} lançamentos sem preço vigente ficaram fora dos valores em R$. Cadastre os preços para o índice ficar completo.` : "";
+
+  // ---- Semanas
+  const semanas = [];
+  for (let w = segunda(de); w <= ate; w = addDias(w, 7)) semanas.push(w);
+  const porSem = Object.fromEntries(semanas.map((w) => [w, { desvio: 0, consumo: 0, extras: 0 }]));
+  desv.forEach((x) => { const w = porSem[segunda(x.dia)]; if (w) w.desvio += Number(x.desvio_valor) || 0; });
+  saidas.forEach((x) => { const w = porSem[segunda(x.dia)]; if (w) w.consumo += Number(x.valor) || 0; });
+  reqs.forEach((x) => { const w = porSem[segunda(x.dia)]; if (w && x.ordem_dia > 1) w.extras++; });
+  const labelsSem = semanas.map((w) => fmtData(w).slice(0, 5));
+  grafico("g-tendencia", {
+    type: "bar",
+    data: {
+      labels: labelsSem,
+      datasets: [
+        { type: "bar", label: "Desvio (R$)", data: semanas.map((w) => +porSem[w].desvio.toFixed(2)), backgroundColor: COR.casco, yAxisID: "y" },
+        { type: "line", label: "Índice (%)", data: semanas.map((w) => porSem[w].consumo > 0 ? +(porSem[w].desvio / porSem[w].consumo * 100).toFixed(2) : null), borderColor: COR.mare, backgroundColor: COR.mare, yAxisID: "y1", tension: 0.2 },
+        { type: "line", label: "Meta (%)", data: semanas.map(() => meta), borderColor: COR.cinza, borderDash: [6, 4], pointRadius: 0, yAxisID: "y1" },
+      ],
+    },
+    options: { scales: { y: { ...eixoR, position: "left" }, y1: { ...eixoPct, position: "right", grid: { drawOnChartArea: false }, beginAtZero: true } } },
+  });
+
+  // ---- Pareto
+  const porProd = {};
+  desv.forEach((x) => { const r = (porProd[x.produto_id] ??= { nome: x.nome, unidade: x.unidade, qtd: 0, desvio: 0, consumo: 0 }); r.qtd += Number(x.desvio); r.desvio += Number(x.desvio_valor) || 0; });
+  saidas.forEach((x) => { const r = (porProd[x.produto_id] ??= { nome: x.nome, unidade: x.unidade, qtd: 0, desvio: 0, consumo: 0 }); r.consumo += Number(x.valor) || 0; });
+  const pareto = Object.values(porProd).filter((r) => r.desvio > 0).sort((a, b) => b.desvio - a.desvio);
+  const totPar = pareto.reduce((s, r) => s + r.desvio, 0);
+  let acum = 0;
+  const top = pareto.slice(0, 15);
+  grafico("g-pareto", {
+    type: "bar",
+    data: {
+      labels: top.map((r) => r.nome.replace(/^PORÇÃO:\s*/, "")),
+      datasets: [
+        { type: "bar", label: "Desvio (R$)", data: top.map((r) => +r.desvio.toFixed(2)), backgroundColor: COR.casco, yAxisID: "y" },
+        { type: "line", label: "Acumulado (%)", data: top.map((r) => +((acum += r.desvio) / totPar * 100).toFixed(1)), borderColor: COR.mare, backgroundColor: COR.mare, yAxisID: "y1" },
+      ],
+    },
+    options: { scales: { x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 40 } }, y: { ...eixoR }, y1: { ...eixoPct, position: "right", min: 0, max: 100, grid: { drawOnChartArea: false } } } },
+  });
+
+  // ---- Dia da semana
+  const porDia = [0, 0, 0, 0, 0, 0, 0];
+  desv.forEach((x) => (porDia[diaSemana(x.dia)] += Number(x.desvio_valor) || 0));
+  grafico("g-semana", {
+    type: "bar",
+    data: { labels: DIAS_SEG.map((d) => DIAS[d]), datasets: [{ label: "Desvio (R$)", data: DIAS_SEG.map((d) => +porDia[d].toFixed(2)), backgroundColor: DIAS_SEG.map((d) => porDia[d] > 0 ? COR.casco : COR.ok) }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: eixoR } },
+  });
+
+  // ---- Perdas × causas
+  const causas = {};
+  trat.forEach((t) => { const k = t.status === "CONCLUIDO" ? t.causa : "Ainda não tratado"; causas[k] = (causas[k] || 0) + (Number(t.desvio_valor) || 0); });
+  const labCausas = ["Perdas registradas", ...E.causas.map((c) => c.nome).filter((n) => n in causas), ...("Ainda não tratado" in causas ? ["Ainda não tratado"] : [])];
+  const semExp = new Set(E.causas.filter((c) => !c.explica).map((c) => c.nome));
+  grafico("g-causas", {
+    type: "bar",
+    data: { labels: labCausas, datasets: [{ label: "R$", data: labCausas.map((l) => +(l === "Perdas registradas" ? perdasR : causas[l]).toFixed(2)),
+      backgroundColor: labCausas.map((l) => l === "Perdas registradas" ? COR.ambar : semExp.has(l) ? COR.casco : l === "Ainda não tratado" ? COR.cinza : COR.mare) }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: eixoR } },
+  });
+
+  // ---- Aderência
+  const crit = E.produtos.filter((p) => p.critico).map((p) => p.id);
+  const contadosDia = {};
+  conts.forEach((c) => (contadosDia[diaSP(c.data_hora)] ??= new Set()).add(c.produto_id));
+  let diasPer = 0, diasOk = 0;
+  for (let d = de; d <= ate && d <= hoje; d = addDias(d, 1)) { diasPer++; if (crit.every((id) => contadosDia[d]?.has(id))) diasOk++; }
+  const comScan = reqs.filter((r) => r.scan_path).length;
+  const extras = reqs.filter((r) => r.ordem_dia > 1);
+  const pctCont = diasPer ? diasOk / diasPer * 100 : null, pctScan = reqs.length ? comScan / reqs.length * 100 : null;
+  $("#ind-aderencia").innerHTML = `
+    <div class="indicador ${pctCont == null ? "" : pctCont >= 95 ? "bom" : "ruim"}"><span>Dias com todos os críticos contados</span><strong>${fmtPct(pctCont)}</strong><small>${diasOk} de ${diasPer} dias</small></div>
+    <div class="indicador ${pctScan == null ? "" : pctScan >= 95 ? "bom" : "ruim"}"><span>Requisições com via assinada</span><strong>${fmtPct(pctScan)}</strong><small>${comScan} de ${reqs.length}</small></div>
+    <div class="indicador"><span>Retiradas extras</span><strong>${extras.length}</strong><small>${semanas.length ? fmtQtd(extras.length / semanas.length) : 0} por semana em média</small></div>`;
+  grafico("g-extras", {
+    type: "bar",
+    data: { labels: labelsSem, datasets: [{ label: "Retiradas extras", data: semanas.map((w) => porSem[w].extras), backgroundColor: COR.ambar }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+  });
+  const motivos = {};
+  extras.forEach((r) => { const k = r.justificativa_extra || "Sem motivo"; motivos[k] = (motivos[k] || 0) + 1; });
+  const labMot = Object.keys(motivos).sort((a, b) => motivos[b] - motivos[a]);
+  grafico("g-motivos", {
+    type: "bar",
+    data: { labels: labMot.length ? labMot : ["Nenhuma"], datasets: [{ label: "Ocorrências", data: labMot.length ? labMot.map((k) => motivos[k]) : [0], backgroundColor: COR.mare }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+  });
+
+  // ---- Índice por produto
+  const linhasProd = Object.values(porProd).map((r) => ({ ...r, indice: r.consumo > 0 ? r.desvio / r.consumo * 100 : null }))
+    .sort((a, b) => b.desvio - a.desvio);
+  $("#ind-prod").innerHTML = linhasProd.length ? linhasProd.map((r) => `<tr><td>${esc(r.nome)}</td><td class="num">${fmtR(r.consumo)}</td>
+    <td class="num ${clsNum(r.qtd)}">${fmtQtd(r.qtd)} ${esc(r.unidade)}</td><td class="num ${clsNum(r.desvio)}">${fmtR(r.desvio)}</td>
+    <td class="num">${fmtPct(r.indice)}</td><td>${r.indice == null ? "" : r.indice > meta ? `<span class="selo ruim">Acima da meta</span>` : `<span class="selo ok">Dentro da meta</span>`}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="vazio">Sem desvios nem consumo no período.</td></tr>`;
+
+  // ---- Cobertura
+  const lim = E.params.cobertura_alerta_dias ?? 2;
+  $("#ind-cob").innerHTML = cob.length ? cob.map((c) => `<tr><td>${esc(c.nome)}</td><td class="num">${fmtQtd(c.saldo)} ${esc(c.unidade)}</td>
+    <td class="num">${fmtQtd(c.media)}</td><td class="num">${c.dias == null ? "sem retirada" : `${fmtQtd(c.dias)} dias`} ${c.alerta ? `<span class="selo ruim">Abaixo de ${lim} dias</span>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="vazio">Sem saldo nem retiradas na câmara principal.</td></tr>`;
+
+  const sub = `${fmtData(de)} a ${fmtData(ate)}`;
+  E.exp.indicadores = { titulo: "Índice de desvio por produto", arquivo: "indicadores", subtitulo: `${sub} | Índice geral ${fmtPct(indice)} | Meta ${fmtPct(meta)}`,
+    colunas: [{ k: "nome", rotulo: "Produto" }, { k: "consumo", rotulo: "Consumo R$", num: true, fmt: fmtR }, { k: "qtd", rotulo: "Desvio qtd", num: true },
+      { k: "desvio", rotulo: "Desvio R$", num: true, fmt: fmtR }, { k: "indice", rotulo: "Índice %", num: true, fmt: fmtPct }],
+    linhas: linhasProd.map((r) => ({ ...r, consumo: +r.consumo.toFixed(2), desvio: +r.desvio.toFixed(2), indice: r.indice == null ? "" : +r.indice.toFixed(2) })) };
+  E.exp.cobertura = { titulo: "Cobertura da câmara principal", arquivo: "cobertura", subtitulo: "Base: retiradas dos últimos 28 dias",
+    colunas: [{ k: "nome", rotulo: "Produto" }, { k: "unidade", rotulo: "Un." }, { k: "saldo", rotulo: "Saldo principal", num: true },
+      { k: "media", rotulo: "Retirada média/dia", num: true }, { k: "dias", rotulo: "Cobertura (dias)", num: true }],
+    linhas: cob.map((c) => ({ ...c, dias: c.dias ?? "" })) };
 }
 
 // ============================================================
@@ -843,6 +1164,7 @@ async function excluirRegistro(tabela, id, descricao, depois) {
 // ============================================================
 carregadores.contagem = () => { $("#cont-data").value = agoraInput(); carregarContagens(); };
 function montarContagem() {
+  E.recont = null; $("#cont-aviso").innerHTML = ""; $("#cont-salvar").textContent = "Salvar contagem";
   const tipo = $("#cont-tipo").value;
   if (tipo === "DIARIA" || tipo === "CHECK") $("#cont-local").value = "COZINHA";
   $("#cont-local").disabled = tipo !== "GERAL";
@@ -851,6 +1173,7 @@ function montarContagem() {
   $("#cont-busca").value = ""; $("#cont-resumo").textContent = ""; $("#cont-resultado").innerHTML = "";
 }
 $("#cont-tipo").addEventListener("change", montarContagem);
+$("#cont-local").addEventListener("change", montarContagem);
 $("#cont-busca").addEventListener("input", (e) => filtrarGrade($("#cont-grid"), e.target.value));
 $("#cont-grid").addEventListener("input", () => contarGrade($("#cont-grid"), "#cont-resumo", "itens preenchidos"));
 
@@ -858,20 +1181,52 @@ $("#cont-salvar").addEventListener("click", async () => {
   const itens = lerGrade($("#cont-grid"), true);
   if (!itens.length) return toast("Preencha ao menos um item.");
   const local = $("#cont-local").value, tipo = $("#cont-tipo").value;
+  const btn = $("#cont-salvar");
+  let dh = inputParaISO($("#cont-data").value);
+
+  if (!E.recont) {
+    // 1ª etapa: o servidor devolve só quais itens precisam ser recontados (contagem cega)
+    btn.disabled = true;
+    const { data: ids, error } = await sb.rpc("checar_recontagem", { p_local: local, p_itens: itens, p_data_hora: dh });
+    btn.disabled = false;
+    if (error) return toast(msgErro(error));
+    if (ids?.length) {
+      E.recont = { dh, primeiras: {} };
+      ids.forEach((id) => {
+        const inp = $(`#cont-grid input[data-id="${id}"]`);
+        E.recont.primeiras[id] = Number(inp.value);
+        inp.value = ""; inp.closest("tr").classList.add("recontar");
+      });
+      const n = ids.length;
+      $("#cont-aviso").innerHTML = `<div class="aviso extra"><strong>${n === 1 ? "1 item precisa" : n + " itens precisam"} ser recontado${n === 1 ? "" : "s"}</strong> (destacado${n === 1 ? "" : "s"} em amarelo, com o campo limpo). De preferência, peça para outra pessoa contar. Preencha de novo e clique em salvar.</div>`;
+      btn.textContent = "Salvar com recontagem";
+      $("#cont-grid tr.recontar")?.scrollIntoView({ block: "center" });
+      $("#cont-grid tr.recontar input")?.focus();
+      return;
+    }
+  } else {
+    const falta = Object.keys(E.recont.primeiras).filter((id) => $(`#cont-grid input[data-id="${id}"]`)?.value === "");
+    if (falta.length) return toast("Preencha a recontagem dos itens destacados.");
+    itens.forEach((i) => { if (i.produto_id in E.recont.primeiras) i.quantidade_primeira = E.recont.primeiras[i.produto_id]; });
+    dh = E.recont.dh;
+  }
+
   if (!confirm(`Salvar contagem ${NOME_TIPO_CONT[tipo].toLowerCase()} da ${NOME_LOCAL[local].toLowerCase()} com ${itens.length} itens?`)) return;
-  const btn = $("#cont-salvar"); btn.disabled = true;
+  btn.disabled = true;
   const { data, error } = await sb.rpc("registrar_contagem", {
-    p_local: local, p_tipo: tipo, p_itens: itens, p_data_hora: inputParaISO($("#cont-data").value), p_observacao: $("#cont-obs").value || null,
+    p_local: local, p_tipo: tipo, p_itens: itens, p_data_hora: dh, p_observacao: $("#cont-obs").value || null,
   });
   btn.disabled = false;
   if (error) return toast(msgErro(error));
   toast("Contagem salva.");
   montarContagem(); $("#cont-obs").value = ""; $("#cont-data").value = agoraInput();
   if (isGestor()) {
-    const dv = await q(sb.from("v_desvios").select("nome,unidade,esperado,contado,desvio,desvio_valor,fora_tolerancia").eq("contagem_id", data.id).order("desvio", { ascending: false }));
+    const dv = await q(sb.from("v_desvios").select("nome,unidade,esperado,contado,quantidade_primeira,desvio,desvio_valor,fora_tolerancia").eq("contagem_id", data.id).order("desvio", { ascending: false }));
     $("#cont-resultado").innerHTML = dv.length ? `<h3 style="margin-top:20px">Resultado desta contagem</h3>
       <div class="tabela-wrap"><table><thead><tr><th>Produto</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Desvio</th><th class="num">R$</th><th></th></tr></thead><tbody>
-      ${dv.map((x) => `<tr><td>${esc(x.nome)}</td><td class="num">${fmtQtd(x.esperado)}</td><td class="num">${fmtQtd(x.contado)}</td><td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}</td><td class="num">${fmtR(x.desvio_valor)}</td><td>${x.fora_tolerancia ? `<span class="selo ruim">Fora da tolerância</span>` : `<span class="selo ok">OK</span>`}</td></tr>`).join("")}
+      ${dv.map((x) => `<tr><td>${esc(x.nome)}</td><td class="num">${fmtQtd(x.esperado)}</td><td class="num">${fmtQtd(x.contado)}${x.quantidade_primeira != null ? `<br><small class="dica">1ª contagem: ${fmtQtd(x.quantidade_primeira)}</small>` : ""}</td>
+        <td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}</td><td class="num">${fmtR(x.desvio_valor)}</td>
+        <td>${x.fora_tolerancia ? `<span class="selo ruim">Fora da tolerância: tratativa aberta</span>` : `<span class="selo ok">OK</span>`}</td></tr>`).join("")}
       </tbody></table></div>` : `<p class="dica">Primeira contagem destes itens neste local: ela vira a base para os próximos desvios.</p>`;
   }
   carregarContagens();
@@ -980,16 +1335,28 @@ $("#ent-lista").addEventListener("click", (ev) => {
 // ============================================================
 // DESVIOS
 // ============================================================
-carregadores.desvios = carregarDesvios;
+carregadores.desvios = () => abrirDevSub($("#dev-nav [aria-selected='true']").dataset.dsub);
+$("#dev-nav").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-dsub]"); if (b) abrirDevSub(b.dataset.dsub); });
+function abrirDevSub(sub) {
+  $$("#dev-nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.dsub === sub));
+  $("#dev-analise").classList.toggle("oculto", sub !== "analise");
+  $("#dev-trat").classList.toggle("oculto", sub !== "trat");
+  (sub === "analise" ? carregarDesvios : carregarTratativas)();
+}
 ["#dev-de", "#dev-ate", "#dev-local", "#dev-criticos", "#dev-fora"].forEach((s) => $(s).addEventListener("change", carregarDesvios));
+["#trat-status", "#trat-de", "#trat-ate"].forEach((s) => $(s).addEventListener("change", carregarTratativas));
+
+const seloStatus = (st) => `<span class="selo ${CLS_STATUS[st]}">${NOME_STATUS[st]}</span>`;
 
 async function carregarDesvios() {
   const de = $("#dev-de").value, ate = $("#dev-ate").value, local = $("#dev-local").value;
-  let qr = sb.from("v_desvios").select("*").gte("dia", de).lte("dia", ate).order("data_hora", { ascending: false });
-  if (local) qr = qr.eq("local", local);
-  if ($("#dev-criticos").checked) qr = qr.eq("critico", true);
-  if ($("#dev-fora").checked) qr = qr.eq("fora_tolerancia", true);
-  const d = await q(qr);
+  const filtrar = (x) => { x = x.gte("dia", de).lte("dia", ate); if (local) x = x.eq("local", local); if ($("#dev-criticos").checked) x = x.eq("critico", true); return x; };
+  const [d, tr] = await Promise.all([
+    tudo(() => { let x = filtrar(sb.from("v_desvios").select("*")).order("data_hora", { ascending: false }); if ($("#dev-fora").checked) x = x.eq("fora_tolerancia", true); return x; }),
+    tudo(() => filtrar(sb.from("v_tratativas").select("*"))),
+  ]);
+  const trMap = Object.fromEntries(tr.map((t) => [t.item_id, t]));
+  E.desviosAtuais = d; E.tratMap = trMap;
 
   const falta = d.reduce((s, x) => s + Math.max(Number(x.desvio_valor) || 0, 0), 0);
   const sobra = d.reduce((s, x) => s + Math.min(Number(x.desvio_valor) || 0, 0), 0);
@@ -1001,24 +1368,24 @@ async function carregarDesvios() {
     <div class="indicador"><span>Fora da tolerância</span><strong>${fora} de ${d.length}</strong></div>`;
 
   const rank = {};
-  d.forEach((x) => {
-    const r = (rank[x.produto_id] ??= { nome: x.nome, unidade: x.unidade, n: 0, qtd: 0, valor: 0 });
-    r.n++; r.qtd += Number(x.desvio); r.valor += Number(x.desvio_valor) || 0;
-  });
+  d.forEach((x) => { const r = (rank[x.produto_id] ??= { nome: x.nome, unidade: x.unidade, n: 0, qtd: 0, valor: 0 }); r.n++; r.qtd += Number(x.desvio); r.valor += Number(x.desvio_valor) || 0; });
   const ranking = Object.values(rank).sort((a, b) => b.valor - a.valor || b.qtd - a.qtd);
   $("#dev-rank").innerHTML = ranking.length ? ranking.map((r) => `<tr><td>${esc(r.nome)}</td><td class="num">${r.n}</td>
     <td class="num ${clsNum(r.qtd)}">${fmtQtd(r.qtd)} ${esc(r.unidade)}</td><td class="num ${clsNum(r.valor)}">${fmtR(r.valor)}</td></tr>`).join("")
     : `<tr><td colspan="4" class="vazio">Nenhum desvio no período. Desvios aparecem a partir da segunda contagem de cada produto.</td></tr>`;
 
-  $("#dev-lista").innerHTML = d.length ? d.map((x) => `<tr>
+  $("#dev-lista").innerHTML = d.length ? d.map((x) => {
+    const t = trMap[x.item_id];
+    return `<tr>
     <td>${fmtDataHora(x.data_hora)}<br><small class="dica">desde ${fmtDataHora(x.data_anterior)}</small></td>
     <td>${esc(x.nome)}</td><td>${NOME_LOCAL[x.local]}</td>
     <td class="num">${fmtQtd(x.qtd_anterior)}</td><td class="num">${fmtQtd(x.entradas_periodo)}</td><td class="num">${fmtQtd(x.saidas_periodo)}</td>
-    <td class="num">${fmtQtd(x.esperado)}</td><td class="num">${fmtQtd(x.contado)}</td>
-    <td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}${x.fora_tolerancia ? ` <span class="selo ruim">!</span>` : ""}</td>
-    <td class="num">${fmtR(x.desvio_valor)}</td>
-    <td>${esc(x.justificativa)}${isGestor() && Number(x.desvio) !== 0 ? ` <button class="btn sec peq" data-just="${x.item_id}" data-atual="${esc(x.justificativa)}">${x.justificativa ? "Editar" : "Justificar"}</button>` : ""}</td></tr>`).join("")
-    : `<tr><td colspan="11" class="vazio">Nenhum desvio no período.</td></tr>`;
+    <td class="num">${fmtQtd(x.esperado)}</td>
+    <td class="num">${fmtQtd(x.contado)}${x.quantidade_primeira != null ? `<br><small class="dica">recontado (1ª: ${fmtQtd(x.quantidade_primeira)})</small>` : ""}</td>
+    <td class="num ${clsNum(x.desvio)}">${fmtQtd(x.desvio)}</td><td class="num">${fmtR(x.desvio_valor)}</td>
+    <td>${t ? `${seloStatus(t.status)} <button class="btn sec peq" data-tratar="${x.item_id}">Tratar</button>` : `<span class="dica">Dentro da tolerância</span>`}</td>
+    <td>${esc(x.justificativa)}${Number(x.desvio) !== 0 ? ` <button class="btn sec peq" data-just="${x.item_id}" data-atual="${esc(x.justificativa)}">${x.justificativa ? "Editar" : "Justificar"}</button>` : ""}</td></tr>`;
+  }).join("") : `<tr><td colspan="12" class="vazio">Nenhum desvio no período.</td></tr>`;
 
   E.exp.desvios = {
     titulo: "Desvios", arquivo: "desvios", subtitulo: `${fmtData(de)} a ${fmtData(ate)} | ${local ? NOME_LOCAL[local] : "Ambos os locais"}`,
@@ -1026,20 +1393,82 @@ async function carregarDesvios() {
       { k: "data", rotulo: "Contagem" }, { k: "nome", rotulo: "Produto" }, { k: "local", rotulo: "Local" },
       { k: "qtd_anterior", rotulo: "Anterior", num: true }, { k: "entradas_periodo", rotulo: "Entrou", num: true }, { k: "saidas_periodo", rotulo: "Saiu", num: true },
       { k: "esperado", rotulo: "Esperado", num: true }, { k: "contado", rotulo: "Contado", num: true }, { k: "desvio", rotulo: "Desvio", num: true },
-      { k: "desvio_valor", rotulo: "Desvio R$", num: true, fmt: (v) => v === "" || v == null ? "" : fmtR(v) }, { k: "justificativa", rotulo: "Justificativa" },
+      { k: "desvio_valor", rotulo: "Desvio R$", num: true, fmt: (v) => v === "" || v == null ? "" : fmtR(v) }, { k: "status", rotulo: "Tratativa" }, { k: "justificativa", rotulo: "Justificativa" },
     ],
     linhas: d.map((x) => ({ ...x, data: fmtDataHora(x.data_hora), local: NOME_LOCAL[x.local],
       qtd_anterior: Number(x.qtd_anterior), entradas_periodo: Number(x.entradas_periodo), saidas_periodo: Number(x.saidas_periodo),
-      esperado: Number(x.esperado), contado: Number(x.contado), desvio: Number(x.desvio), desvio_valor: x.desvio_valor == null ? "" : Number(x.desvio_valor) })),
+      esperado: Number(x.esperado), contado: Number(x.contado), desvio: Number(x.desvio), desvio_valor: x.desvio_valor == null ? "" : Number(x.desvio_valor),
+      status: trMap[x.item_id] ? NOME_STATUS[trMap[x.item_id].status] : "Dentro da tolerância" })),
   };
 }
 $("#dev-lista").addEventListener("click", async (ev) => {
+  const t = ev.target.closest("[data-tratar]");
+  if (t) return abrirTratativa(E.tratMap[t.dataset.tratar], carregarDesvios);
   const b = ev.target.closest("[data-just]"); if (!b) return;
   const v = prompt("Justificativa do desvio:", b.dataset.atual || "");
   if (v === null) return;
   const { error } = await sb.from("contagem_itens").update({ justificativa: v.trim() || null }).eq("id", b.dataset.just);
   if (error) return toast(msgErro(error));
   toast("Justificativa salva."); carregarDesvios();
+});
+
+async function carregarTratativas() {
+  const st = $("#trat-status").value, de = $("#trat-de").value, ate = $("#trat-ate").value;
+  const [lista, obs, pend] = await Promise.all([
+    tudo(() => { let x = sb.from("v_tratativas").select("*").gte("dia", de).lte("dia", ate).order("data_hora", { ascending: false });
+      if (st === "PENDENTES") x = x.neq("status", "CONCLUIDO"); else if (st) x = x.eq("status", st); return x; }),
+    q(sb.from("v_observacao").select("*")),
+    sb.from("v_tratativas").select("item_id", { count: "exact", head: true }).neq("status", "CONCLUIDO"),
+  ]);
+  $("#trat-badge").innerHTML = pend.count ? `<span class="selo ruim">${pend.count}</span>` : "";
+  const obsSet = new Set(obs.map((o) => o.produto_id + o.local));
+  const lim = E.params?.reincidencia_contagens ?? 3;
+  $("#trat-obs").innerHTML = obs.length ? `<div class="aviso extra"><strong>Itens em observação</strong> (${lim} contagens seguidas fora da tolerância): ${obs.map((o) => `${esc(o.nome)} (${NOME_LOCAL[o.local].toLowerCase()})`).join(", ")}. Vale uma medida extra, como contagem em dois turnos.</div>` : "";
+  E.tratLista = Object.fromEntries(lista.map((t) => [t.item_id, t]));
+  $("#trat-lista").innerHTML = lista.length ? lista.map((t) => `<tr>
+    <td>${fmtDataHora(t.data_hora)}</td>
+    <td>${esc(t.nome)}${obsSet.has(t.produto_id + t.local) ? ` <span class="selo obs">Em observação</span>` : ""}</td>
+    <td>${NOME_LOCAL[t.local]}</td>
+    <td class="num ${clsNum(t.desvio)}">${fmtQtd(t.desvio)} ${esc(t.unidade)}</td><td class="num">${fmtR(t.desvio_valor)}</td>
+    <td>${seloStatus(t.status)}</td><td>${esc(t.causa)}</td>
+    <td>${esc(t.acao)}${t.responsavel ? `<br><small class="dica">${esc(t.responsavel)}</small>` : ""}</td>
+    <td><button class="btn sec peq" data-tratar="${t.item_id}">Tratar</button></td></tr>`).join("")
+    : `<tr><td colspan="9" class="vazio">${st === "PENDENTES" ? "Nenhuma tratativa pendente." : "Nada neste filtro."}</td></tr>`;
+  E.exp.tratativas = { titulo: "Tratativas de desvio", arquivo: "tratativas", subtitulo: `${fmtData(de)} a ${fmtData(ate)}`,
+    colunas: [{ k: "data", rotulo: "Contagem" }, { k: "nome", rotulo: "Produto" }, { k: "local", rotulo: "Local" }, { k: "desvio", rotulo: "Desvio", num: true },
+      { k: "desvio_valor", rotulo: "Desvio R$", num: true, fmt: (v) => v === "" ? "" : fmtR(v) }, { k: "status", rotulo: "Situação" }, { k: "causa", rotulo: "Causa" },
+      { k: "acao", rotulo: "Ação" }, { k: "responsavel", rotulo: "Responsável" }],
+    linhas: lista.map((t) => ({ data: fmtDataHora(t.data_hora), nome: t.nome, local: NOME_LOCAL[t.local], desvio: Number(t.desvio),
+      desvio_valor: t.desvio_valor == null ? "" : Number(t.desvio_valor), status: NOME_STATUS[t.status], causa: t.causa || "", acao: t.acao || "", responsavel: t.responsavel || "" })) };
+}
+$("#trat-lista").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-tratar]");
+  if (b) abrirTratativa(E.tratLista[b.dataset.tratar], carregarTratativas);
+});
+
+function abrirTratativa(t, depois) {
+  if (!t) return;
+  E.tratAlvo = t; E.tratDepois = depois;
+  $("#trat-info").innerHTML = `<strong>${esc(t.nome)}</strong> (${NOME_LOCAL[t.local].toLowerCase()})<br>
+    Contagem de ${fmtDataHora(t.data_hora)}: esperado ${fmtQtd(t.esperado)}, contado ${fmtQtd(t.contado)}, desvio <span class="${clsNum(t.desvio)}">${fmtQtd(t.desvio)} ${esc(t.unidade)}</span> (${fmtR(t.desvio_valor)})`;
+  $("#trat-f-status").value = t.status;
+  $("#trat-f-causa").value = t.causa_id ?? "";
+  $("#trat-f-acao").value = t.acao ?? "";
+  $("#trat-f-resp").value = t.responsavel ?? "";
+  $("#trat-f-obs").value = t.trat_observacao ?? "";
+  $("#trat-erro").textContent = "";
+  $("#modal-trat").showModal();
+}
+$("#trat-cancelar").addEventListener("click", () => $("#modal-trat").close());
+$("#form-trat").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const status = $("#trat-f-status").value, causa = $("#trat-f-causa").value;
+  if (status === "CONCLUIDO" && !causa) return ($("#trat-erro").textContent = "Para concluir, informe a causa.");
+  const reg = { contagem_item_id: E.tratAlvo.item_id, status, causa_id: causa ? Number(causa) : null,
+    acao: $("#trat-f-acao").value.trim() || null, responsavel: $("#trat-f-resp").value.trim() || null, observacao: $("#trat-f-obs").value.trim() || null };
+  const { error } = await sb.from("desvio_tratativas").upsert(reg, { onConflict: "contagem_item_id" });
+  if (error) return ($("#trat-erro").textContent = msgErro(error));
+  $("#modal-trat").close(); toast("Tratativa salva."); E.tratDepois?.();
 });
 
 // ============================================================
@@ -1187,8 +1616,8 @@ carregadores.cadastros = () => abrirSub($("#cad-nav [aria-selected='true']").dat
 $("#cad-nav").addEventListener("click", (ev) => { const b = ev.target.closest("button[data-sub]"); if (b) abrirSub(b.dataset.sub); });
 function abrirSub(sub) {
   $$("#cad-nav button").forEach((b) => b.setAttribute("aria-selected", b.dataset.sub === sub));
-  ["produtos", "precos", "ideal", "tipos", "justs", "usuarios"].forEach((s) => $("#cad-" + s).classList.toggle("oculto", s !== sub));
-  ({ produtos: renderCadProdutos, precos: carregarPrecos, ideal: carregarIdeal, tipos: renderTipos, justs: renderJusts, usuarios: carregarUsuarios })[sub]();
+  ["produtos", "precos", "ideal", "tipos", "justs", "causas", "parametros", "usuarios"].forEach((s) => $("#cad-" + s).classList.toggle("oculto", s !== sub));
+  ({ produtos: renderCadProdutos, precos: carregarPrecos, ideal: carregarIdeal, tipos: renderTipos, justs: renderJusts, causas: renderCausas, parametros: renderParametros, usuarios: carregarUsuarios })[sub]();
 }
 
 // --- Produtos
@@ -1274,7 +1703,8 @@ function renderIdeal() {
   ordenarProdutos(E.produtos).filter((p) => !t || p.nome.toLowerCase().includes(t)).forEach((p) => {
     if (p.categoria !== cat) { cat = p.categoria; html += `<tr class="grupo"><td colspan="8">${esc(cat)}</td></tr>`; }
     html += `<tr class="${p.critico ? "critico" : ""}"><td>${esc(p.nome)} <small class="dica">${esc(p.unidade)}</small></td>
-      ${DIAS.map((_, d) => `<td class="num"><input class="mini" type="number" min="0" step="0.01" data-ideal="${p.id}" data-dia="${d}" value="${mapa[p.id + "_" + d] ?? ""}" aria-label="${esc(p.nome)} ${DIAS[d]}"></td>`).join("")}</tr>`;
+      ${DIAS.map((_, d) => { const k = p.id + "_" + d, sug = E.idealSug?.[k];
+        return `<td class="num"><input class="mini ${sug != null ? "sugerido" : ""}" type="number" min="0" step="0.01" data-ideal="${p.id}" data-dia="${d}" value="${sug ?? mapa[k] ?? ""}" aria-label="${esc(p.nome)} ${DIAS[d]}"></td>`; }).join("")}</tr>`;
   });
   $("#ide-lista").innerHTML = html;
 }
@@ -1286,7 +1716,54 @@ $("#ide-salvar").addEventListener("click", async () => {
   if (!regs.length) return toast("Preencha ao menos um valor.");
   const { error } = await sb.from("estoque_ideal").upsert(regs, { onConflict: "produto_id,dia_semana" });
   if (error) return toast(msgErro(error));
+  E.idealSug = {}; $("#ide-dica-sug").textContent = "";
   toast("Estoque ideal salvo."); carregarIdeal();
+});
+
+$("#ide-lista").addEventListener("input", (ev) => {
+  const i = ev.target.closest("input[data-ideal]"); if (!i) return;
+  if (E.idealSug) delete E.idealSug[i.dataset.ideal + "_" + i.dataset.dia];
+  i.classList.remove("sugerido");
+});
+$("#ide-sugerir").addEventListener("click", async () => {
+  const N = E.params.semanas_estoque_ideal || 4, marg = E.params.margem_estoque_ideal ?? 10;
+  const hoje = hojeSP(), de = addDias(hoje, -7 * N), ate = addDias(hoje, -1);
+  const d = await tudo(() => sb.from("v_saidas").select("produto_id,dia,quantidade").gte("dia", de).lte("dia", ate));
+  if (!d.length) return toast(`Não há saídas lançadas nas últimas ${N} semanas para calcular.`);
+  const soma = {};
+  d.forEach((x) => { const k = x.produto_id + "_" + diaSemana(x.dia); soma[k] = (soma[k] || 0) + Number(x.quantidade); });
+  const atual = {}; (E.ideal || []).forEach((x) => (atual[x.produto_id + "_" + x.dia_semana] = Number(x.quantidade)));
+  E.idealSug = {};
+  Object.entries(soma).forEach(([k, tot]) => {
+    const p = E.produtos.find((x) => x.id === k.split("_")[0]); if (!p) return;
+    let v = tot / N * (1 + marg / 100);
+    v = p.unidade === "KG" ? Math.ceil(v * 10) / 10 : Math.ceil(v);
+    if (atual[k] !== v) E.idealSug[k] = v;
+  });
+  const n = Object.keys(E.idealSug).length;
+  renderIdeal();
+  $("#ide-dica-sug").textContent = n
+    ? `${n} valores sugeridos em destaque: média das saídas de cada dia da semana nas últimas ${N} semanas + ${fmtQtd(marg)}% de margem. Revise e clique em Salvar.`
+    : "O estoque ideal atual já bate com a sugestão.";
+});
+
+// --- Causas de desvio
+const renderCausas = () => renderListaSimples("#causa-lista", E.causas, "causas_desvio");
+$("#causa-add").addEventListener("click", () => addSimples("#causa-novo", "causas_desvio", renderCausas));
+
+// --- Parâmetros
+function renderParametros() {
+  $("#par-lista").innerHTML = E.paramsLista.map((p) => `<tr><td>${esc(p.descricao)}</td>
+    <td class="num"><input class="mini" type="number" min="0" step="0.1" data-par="${p.chave}" value="${Number(p.valor)}"></td><td>${esc(p.unidade)}</td></tr>`).join("");
+}
+$("#par-salvar").addEventListener("click", async () => {
+  const mud = $$("#par-lista input[data-par]").filter((i) => i.value !== "" && Number(i.value) !== E.params[i.dataset.par]);
+  if (!mud.length) return toast("Nada alterado.");
+  for (const i of mud) {
+    const { error } = await sb.from("parametros").update({ valor: Number(i.value) }).eq("chave", i.dataset.par);
+    if (error) return toast(msgErro(error));
+  }
+  await carregarCadastros(); renderParametros(); toast("Parâmetros salvos.");
 });
 
 // --- Tipos de saída e justificativas
@@ -1295,7 +1772,7 @@ function renderListaSimples(alvo, lista, tabela) {
 }
 const renderTipos = () => renderListaSimples("#tipo-lista", E.tipos, "tipos_saida");
 const renderJusts = () => renderListaSimples("#just-lista", E.justificativas, "justificativas_extra");
-["#tipo-lista", "#just-lista"].forEach((s) => $(s).addEventListener("change", async (ev) => {
+["#tipo-lista", "#just-lista", "#causa-lista"].forEach((s) => $(s).addEventListener("change", async (ev) => {
   const i = ev.target;
   const { error } = await sb.from(i.dataset.tab).update({ ativo: i.checked }).eq("id", i.dataset.id);
   if (error) return toast(msgErro(error));
